@@ -1,4 +1,4 @@
-param(
+﻿param(
   [Parameter(Mandatory=$true)]
   [string]$SolutionFolderPath
 )
@@ -53,6 +53,9 @@ function Convert-NodeToIdentifier
     $identifier = "$type - $id"
   } elseif($node.HasAttribute("id.connectionreferencelogicalname")) {
     $id = $node["id.connectionreferencelogicalname"]
+    $identifier = "$type - $id"
+  } elseif($node.HasAttribute("id.schemaname")) {
+    $id = $node["id.schemaname"]
     $identifier = "$type - $id"
   } else {
     Write-Error "MissingDependency sub-node does not have any discernible identifiers: $($node.OuterXML)"

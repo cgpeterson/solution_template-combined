@@ -9,7 +9,7 @@ namespace DeploymentPackage
     /// Import package starter frame. 
     /// </summary>
     [Export(typeof(IImportExtensions))]
-    public class PackageTemplate : CCLLC.Cds.DeploymentPackage.CCLLCImportExtension
+    public class PackageTemplate : JMCL.Dataverse.DeploymentPackage.JmclImportExtension
     {       
 
         #region Properties

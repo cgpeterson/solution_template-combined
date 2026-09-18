@@ -14,12 +14,25 @@
     $PackageType = "Unmanaged",   
 
     # The available actions to perform during the import
-    [ValidateSet("All","Solutions","ConfigData","TestData","Compress-CrmSolution","Compress-ConfigData","Merge-ConfigData","Compress-TestData","Merge-TestData","New-CrmPackage","Invoke-ImportCrmPackage")]
+    [ValidateSet("All","Solutions","ConfigData","TestData","Compress-CrmSolution","Compress-ConfigData","Merge-ConfigData","Compress-TestData","Merge-TestData","New-CrmPackage","Invoke-ImportCrmPackage","Import-DocumentTemplates","Stage-PortalChange","Upload-StagedPortalChanges")]
     [string[]]
     $Actions = "All",
-	
+
 	[switch]
-	$ResetEnvironment
+	$ResetEnvironment,
+
+	# Passed through to Stage-PortalChange.ps1 / Upload-StagedPortalChanges.ps1
+	[string]
+	$SiteFolderName,
+
+	# Passed through to Upload-StagedPortalChanges.ps1. Not included under 'All' --
+	# see the 'Upload-StagedPortalChanges' action block below.
+	[switch]
+	$DryRun,
+
+	# Passed through to Upload-StagedPortalChanges.ps1
+	[switch]
+	$SkipFieldPatcher
 )
 
 $global:ErrorActionPreference = "Stop"
@@ -28,7 +41,12 @@ Write-Host("Running Import.ps1")
 
 # Setup CRM_SDK_PATH variable and load required supporting modules
 $Env:CRM_SDK_PATH = "$PSScriptRoot\Tools"
+# Adoxio.Dynamics.DevOps stays for Compress-CrmData (local, no connection).
+# CCLLC.Cds.DevOps provides Import-DocumentTemplates. It requires Microsoft.Xrm.Data.Powershell,
+# so this is the one path deliberately left on the old Get-CrmConnection/ADAL stack: pac has no
+# equivalent command. Everything else above authenticates through pac (MSAL).
 Import-Module "$env:CRM_SDK_PATH\Adoxio.Dynamics.DevOps\Adoxio.Dynamics.DevOps.psd1" -Force
+Import-Module "$env:CRM_SDK_PATH\CCLLC.Cds.DevOps\CCLLC.Cds.DevOps.PowerShell.psd1" -Force
 
 $ConnectionParameters = switch ($ConnectionName) {
 	"MySandbox" {& "C:\\CrmConnection\MyCdsSandboxConnection.ps1"}
@@ -37,8 +55,6 @@ $ConnectionParameters = switch ($ConnectionName) {
 
 $settings = & "$PSScriptRoot\Settings\$ImportSettings.ps1" -ConnectionParameters $ConnectionParameters -PackageType $PackageType
 
-$dataPackage = $null
-
 
 # If directed, configured, and solution data exists then  compress the solution into a zip file.
 if($settings.ExtractedSolutions `
@@ -46,154 +62,29 @@ if($settings.ExtractedSolutions `
     -and ("All" -in $Actions -or "New-CrmPackage" -in $Actions -or 'Solutions' -in $Actions -or 'Compress-CrmSolution' -in $Actions )) {
     Write-Host("Compressing Solution")
     & "$PSScriptRoot\Doctoring\Add-KeysToMissingDependencies.ps1" -SolutionFolderPath "$(Split-Path $PSScriptRoot)\CdsSolution"
-    $settings.ExtractedSolutions | Compress-CrmSolution -Verbose
+    pac solution pack -f $settings.ExtractedSolutions.Folder -z $settings.ExtractedSolutions.ZipFile -m $settings.ExtractedSolutions.MappingXmlFile -p $settings.ExtractedSolutions.PackageType --useUnmanagedFileForMissingManaged -e Verbose
 }
 
 
-# If directed, configured, and schema file exists then compress configuration data into a zip file
+# Compress configuration data into a zip file
 if($settings.ExtractedConfigData `
     -and $settings.ExtractedConfigData.Exists `
-    -and ("All" -in $Actions -or "New-CrmPackage" -in $Actions -or "ConfigData" -in $Actions -or 'Compress-ConfigData' -in $Actions)) {
-		Write-Host("Compressing configuration data")
-        $settings.ExtractedConfigData | Compress-CrmData -Verbose	
-        
-        Write-Host("Adding compressed configuration data to package data.")
-        $dataPackage = Import-CrmDataPackage -ZipPath $settings.ExtractedConfigData.ZipFile
-}
-	
-
-# If directed and configured, merge dependency configuration data into the package data
-if($settings.ExtractedConfigData `
-    -and ("All" -in $Actions  -or "New-CrmPackage" -in $Actions -or "ConfigData" -in $Actions -or "Merge-ConfigData"-in $Actions ) `
-    -and $settings.ExtractedConfigData.DependencyDataFiles `
-    -and $settings.ExtractedConfigData.DependencyDataFiles.Count -ge 1 ) {
-        
-		# When data package build has already started merge in all dependency configuration data files
-		if($dataPackage){
-		
-			Write-Host("Merging dependency configuration data into package data.")  
-			         
-			$settings.ExtractedConfigData.DependencyDataFiles | ForEach-Object -Process { 
-				Write-Verbose("Merging $_")
-				$additionalPackage = Import-CrmDataPackage -ZipPath $_
-				$dataPackage = Merge-CrmDataPackage -SourcePackage $dataPackage -AdditionalPackage $additionalPackage
-				}        
-		}
-
-		# When data package is being started by dependency configuration data
-		Else {
-		
-            Write-Host("Creating package data from first dependency configuration data set.")
-            $dataPackage = Import-CrmDataPackage -ZipPath $settings.ExtractedConfigData.DependencyDataFiles[0]
-
-			# Two or more dependency data files -> Merge file 2 and above into the data package
-			if($settings.ExtractedConfigData.DependencyDataFiles.Count -ge 2){
-
-				Write-Host("Merging remaining dependency configuration data sets into package data")
-        
-				$mergeTarget = $settings.ExtractedConfigData.DependencyDataFiles[0]
-				$additionalFiles = $settings.ExtractedConfigData.DependencyDataFiles -ne $mergeTarget
-  
-				$additionalFiles | ForEach-Object -Process { 				
-				    $additionalPackage = Import-CrmDataPackage -ZipPath $_
-				    $dataPackage = Merge-CrmDataPackage -SourcePackage $dataPackage -AdditionalPackage $additionalPackage
-				}  
-			}			
-		}
+    -and ("All" -in $Actions -or "ConfigData" -in $Actions -or 'Compress-ConfigData' -in $Actions)) {
+        Write-Host("Compressing configuration data")
+        $settings.ExtractedConfigData | Compress-CrmData -Verbose
 }
 
-
-# If directed, configured, and schema file exists then compress test data into a zip file 
+# Compress test data into a zip file
 if($settings.ExtractedTestData `
     -and $settings.ExtractedTestData.Exists `
-	-and ("All" -in $Actions  -or "New-CrmPackage" -in $Actions -or "TestData" -in $Actions -or 'Merge-TestData' -in $Actions -or 'Compress-TestData' -in $Actions)) {
-		Write-Host("Compressing Test Data")
-		$settings.ExtractedTestData | Compress-CrmData
-}
-
-# If directed and configured, merge dependency test data into the package data zip file
-if($settings.ExtractedTestData `
-    -and ("All" -in $Actions -or "TestData" -in $Actions -or "Merge-TestData"-in $Actions )) {
-
-		if($settings.ExtractedTestData.ZipFile -and (Test-Path -Path $settings.ExtractedTestData.ZipFile)){
-
-            if($dataPackage){                
-                Write-Host("Merging compressed data into the package data")
-                $additionalPackage = Import-CrmDataPackage -ZipPath $settings.ExtractedTestData.ZipFile
-				$dataPackage = Merge-CrmDataPackage -SourcePackage $dataPackage -AdditionalPackage $additionalPackage
-            } Else {
-                Write-Host("Creating package data from compressed test data.")
-                $dataPackage = Import-CrmDataPackage -ZipPath $settings.ExtractedTestData.ZipFile
-            }
-		}
-
-        if($settings.ExtractedTestData.DependencyDataFiles -and $settings.ExtractedTestData.DependencyDataFiles.Count -ge 1 ){
-            
-            if($dataPackage){
-                Write-Host("Merging dependency test data into package data")
-                $settings.ExtractedTestData.DependencyDataFiles | ForEach-Object -Process { 
-				    $additionalPackage = Import-CrmDataPackage -ZipPath $_
-				    $dataPackage = Merge-CrmDataPackage -SourcePackage $dataPackage -AdditionalPackage $additionalPackage
-				}
-            } Else {
-
-                Write-Host("Creating package data from first dependency test data set.")
-                $dataPackage = Import-CrmDataPackage -ZipPath $settings.ExtractedTestData.DependencyDataFiles[0]
-
-			    # Two or more dependency data files -> Merge file 2 and above into the data package
-			    if($settings.ExtractedTestData.DependencyDataFiles.Count -ge 2){
-
-				    Write-Host("Merging remaining dependency data sets into package data")
-        
-				    $mergeTarget = $settings.ExtractedTestData.DependencyDataFiles[0]
-				    $additionalFiles = $settings.ExtractedTestData.DependencyDataFiles -ne $mergeTarget
-    
-				    $additionalFiles | ForEach-Object -Process { 				
-				        $additionalPackage = Import-CrmDataPackage -ZipPath $_
-				        $dataPackage = Merge-CrmDataPackage -SourcePackage $dataPackage -AdditionalPackage $additionalPackage
-				    }  
-			    }
-            }
-        }
-
-}
-
-
-if($dataPackage) {
-    Write-Host("Writing package data to zip file $settings.CrmPackageDefinition.DataZipFile")
-    $folder = Split-Path -Path $settings.CrmPackageDefinition.DataZipFile
-    if(-Not (Test-Path -Path $folder)){
-        md -Path $folder
-    }
-    Export-CrmDataPackage -Package $dataPackage -ZipPath $settings.CrmPackageDefinition.DataZipFile
-}
-		
-
-# remove data file from definition if doing only solutions
-if($settings.CrmPackageDefinition -and  'Solutions' -in $Actions) {
-	For ($i=0; $i -lt $settings.CrmPackageDefinition.Length; $i++) {
-		$settings.CrmPackageDefinition[$i].PSObject.Properties.Remove("DataZipFile")
-    }
-}
-
-
-if($settings.CrmPackageDefinition -and ("All" -in $Actions -or 'New-CrmPackage' -in $Actions -or 'Solutions' -in $Actions -or 'ConfigData' -in $Actions -or 'TestData' -in $Actions)) {
-    
-    # remove the data configuration if the zip file does not exist.
-    if($settings.CrmPackageDefinition.DataZipFile -and -not (Test-Path -Path  $settings.CrmPackageDefinition.DataZipFile)){ 
-		Write-Host("No Package Configuration Data: Cleaning up package definition to remove data file definition")
-		For ($i=0; $i -lt $settings.CrmPackageDefinition.Length; $i++) {
-			$settings.CrmPackageDefinition[$i].PSObject.Properties.Remove("DataZipFile")
-		}		
-	}
-
-	Write-Host("Creating Deployment Package")
-	$settings.CrmPackageDefinition | New-CrmPackage
+    -and ("All" -in $Actions -or "TestData" -in $Actions -or 'Compress-TestData' -in $Actions)) {
+        Write-Host("Compressing Test Data")
+        $settings.ExtractedTestData | Compress-CrmData
 }
 
 if($settings.ResetEnvironmentDefinition -and ("All" -in $Actions -or 'Invoke-ImportCrmPackage' -in $Actions -or 'Solutions' -in $Actions -or 'ConfigData' -in $Actions -or 'TestData' -in $Actions) -and $ResetEnvironment) {
-    
-    	
+
+    # Still ADAL-based; pac has no reset-environment equivalent yet.
 	Add-PowerAppsAccount -Username $settings.ResetEnvironmentDefinition.Username -Password $settings.ResetEnvironmentDefinition.SecurePassword
 
     $searchTerm = "*(" + $settings.ResetEnvironmentDefinition.EnvironmentName + ")*"    
@@ -265,8 +156,99 @@ if($settings.ResetEnvironmentDefinition -and ("All" -in $Actions -or 'Invoke-Imp
     Write-Host "Reset completed."
 }
 
-if($settings.CrmPackageDeploymentDefinition -and ("All" -in $Actions -or 'Invoke-ImportCrmPackage' -in $Actions -or 'Solutions' -in $Actions -or 'ConfigData' -in $Actions -or 'TestData' -in $Actions)) {
-    Write-Host("Deploying Package")
-	$settings.CrmPackageDeploymentDefinition | Invoke-ImportCrmPackage
+# Assemble the Package Deployer package folder -- local file copy only, no Dataverse
+# connection. DeploymentPackage.csproj's PostBuildEvent calls this via -Actions New-CrmPackage
+# to produce temp\deployment\<PackageFolder>, which CI publishes as a build artifact and the
+# release pipeline's "Power Platform Deploy Package" task consumes.
+if($settings.CrmPackageDefinition -and ("All" -in $Actions -or 'New-CrmPackage' -in $Actions -or 'Solutions' -in $Actions -or 'ConfigData' -in $Actions -or 'TestData' -in $Actions)) {
+    if($settings.CrmPackageDefinition.DataZipFile -and -not (Test-Path -Path $settings.CrmPackageDefinition.DataZipFile)) {
+        For ($i=0; $i -lt $settings.CrmPackageDefinition.Length; $i++) {
+            $settings.CrmPackageDefinition[$i].PSObject.Properties.Remove("DataZipFile")
+        }
+    }
+
+    Write-Host("Creating Deployment Package")
+    $settings.CrmPackageDefinition | New-CrmPackage
 }
 
+# pac auth, then solution import (dependency solutions first), then data import.
+if ("All" -in $Actions -or 'Solutions' -in $Actions -or 'ConfigData' -in $Actions -or 'TestData' -in $Actions -or 'Invoke-ImportCrmPackage' -in $Actions) {
+
+    $pacParams = $ConnectionParameters.PacConnectionParameter
+    if (-not $pacParams -or -not $pacParams.EnvironmentUrl) {
+        throw "Connection file '$ConnectionName' has no PacConnectionParameter.EnvironmentUrl. Add one (e.g. https://<org>.crm9.dynamics.com) before running Import.ps1."
+    }
+
+    $pacProfileName = $settings.SolutionName
+    Write-Host "pac auth: $($pacParams.EnvironmentUrl) (profile: $pacProfileName)"
+    pac auth create --url $pacParams.EnvironmentUrl --name $pacProfileName | Out-Null
+    pac auth select --name $pacProfileName | Out-Null
+
+    if ("All" -in $Actions -or 'Solutions' -in $Actions -or 'Invoke-ImportCrmPackage' -in $Actions) {
+        foreach ($solutionZip in ($settings.CrmPackageDefinition.SolutionZipFiles | Where-Object { $_ -and (Test-Path -Path $_) })) {
+            Write-Host "pac solution import: $solutionZip"
+            pac solution import --path $solutionZip --publish-changes --async
+            if ($LASTEXITCODE -ne 0) { throw "pac solution import failed for '$solutionZip' (exit $LASTEXITCODE)" }
+        }
+    }
+
+    $dataZipsToImport = @()
+    if ("All" -in $Actions -or 'ConfigData' -in $Actions -or 'Invoke-ImportCrmPackage' -in $Actions) {
+        $dataZipsToImport += $settings.ExtractedConfigData.DependencyDataFiles
+        if ($settings.ExtractedConfigData.Exists) { $dataZipsToImport += $settings.ExtractedConfigData.ZipFile }
+    }
+    if ("All" -in $Actions -or 'TestData' -in $Actions -or 'Invoke-ImportCrmPackage' -in $Actions) {
+        $dataZipsToImport += $settings.ExtractedTestData.DependencyDataFiles
+        if ($settings.ExtractedTestData.Exists) { $dataZipsToImport += $settings.ExtractedTestData.ZipFile }
+    }
+
+    foreach ($dataZip in ($dataZipsToImport | Where-Object { $_ -and (Test-Path -Path $_) })) {
+        Write-Host "pac data import: $dataZip"
+        pac data import --data $dataZip
+        if ($LASTEXITCODE -ne 0) { throw "pac data import failed for '$dataZip' (exit $LASTEXITCODE)" }
+    }
+}
+
+if($settings.DocumentTemplates `
+    -and $settings.DocumentTemplates.Exists `
+    -and $settings.DocumentTemplates.Files.Count -ge 1 `
+    -and ("All" -in $Actions -or "Import-DocumentTemplates" -in $Actions)){
+        [HashTable]$crmConnectionParameters = $settings.DocumentTemplates.CrmConnectionParameters
+        [string]$path = $settings.DocumentTemplates.Folder
+
+        Write-Host("Importing Document Templates from $path")        
+        
+        $crmConnection = Get-CrmConnection @crmConnectionParameters
+        Import-DocumentTemplates -Conn @crmConnection -TemplateDirectory $path
+}
+
+# ---------------------------------------------------------------------------
+# Stage Portal Change — local git-index helper, no environment connection
+# needed. Included under 'All', same as the Compress-*/Merge-* actions above,
+# since it only touches files already on disk / staged in git.
+# ---------------------------------------------------------------------------
+
+if ("All" -in $Actions -or "Stage-PortalChange" -in $Actions) {
+    Write-Host ""
+    Write-Host "================================================================"
+    Write-Host "Stage Portal Change"
+    Write-Host "================================================================"
+    & "$PSScriptRoot\Stage-PortalChange.ps1" -SiteFolderName $SiteFolderName
+}
+
+
+# ---------------------------------------------------------------------------
+# Upload Staged Portal Changes — pushes staged Power Pages changes to the
+# live environment. NOT included under 'All' (unlike Stage-PortalChange
+# above) since this is a real push to a live environment, not a local-only
+# operation — requires explicit -Actions Upload-StagedPortalChanges. It has
+# its own Y/N confirmation gate as a second line of defense.
+# ---------------------------------------------------------------------------
+
+if ("Upload-StagedPortalChanges" -in $Actions) {
+    Write-Host ""
+    Write-Host "================================================================"
+    Write-Host "Upload Staged Portal Changes"
+    Write-Host "================================================================"
+    & "$PSScriptRoot\Upload-StagedPortalChanges.ps1" -ConnectionName $ConnectionName -SiteFolderName $SiteFolderName -DryRun:$DryRun -SkipFieldPatcher:$SkipFieldPatcher
+}

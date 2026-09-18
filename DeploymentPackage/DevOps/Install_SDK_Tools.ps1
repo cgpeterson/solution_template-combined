@@ -52,6 +52,22 @@ Remove-Item .\Tools\$pdPoshFolder -Force -Recurse
 Remove-Item nuget.exe
 
 ##
-##Copy the developer sandbox connection script
+##Provision the developer sandbox connection file at the location the DevOps scripts actually
+##read. It lives outside the repo so it is never committed and is shared by every solution repo
+##on this machine. An existing file is left alone, so re-running this script to refresh tooling
+##does not wipe the values a developer has already filled in.
 ##
-Copy-Item "$PSScriptRoot\CdsConnectionParameters\MyCdsSandboxConnection-Template.ps1" -Destination "Tools\MyCdsSandboxConnection.ps1"
+$connectionFolder = "C:\CrmConnection"
+$connectionFile   = Join-Path $connectionFolder "MyCdsSandboxConnection.ps1"
+
+if (-not (Test-Path $connectionFolder)) {
+    New-Item -ItemType Directory -Path $connectionFolder | Out-Null
+}
+
+if (Test-Path $connectionFile) {
+    Write-Host "Existing connection file left in place: $connectionFile"
+} else {
+    Copy-Item "$PSScriptRoot\CdsConnectionParameters\MyCdsSandboxConnection-Template.ps1" -Destination $connectionFile
+    Write-Host "Created $connectionFile"
+    Write-Host "Edit it with your sandbox details before running Export.ps1 or Import.ps1."
+}

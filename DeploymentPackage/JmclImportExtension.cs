@@ -2,9 +2,9 @@
 using Microsoft.Uii.Common.Entities;
 using Microsoft.Xrm.Tooling.PackageDeployment.CrmPackageExtentionBase;
 
-namespace CCLLC.Cds.DeploymentPackage
+namespace JMCL.Dataverse.DeploymentPackage
 {   
-    public abstract class CCLLCImportExtension : ImportExtension
+    public abstract class JmclImportExtension : ImportExtension
     {
         /// <summary>
         /// Called When the package is initialized. 

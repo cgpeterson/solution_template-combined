@@ -1,4 +1,4 @@
-# This script is used by DevOps import and export scripts to establish a connection to a developers
+﻿# This script is used by DevOps import and export scripts to establish a connection to a developers
 # assigned CDS Sandbox Environment.
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -16,5 +16,8 @@
         EnvironmentName = $null
         Username = $null
         SecurePassword = $null
+    }
+    PacConnectionParameter = @{
+        EnvironmentUrl = $null
     }
 }

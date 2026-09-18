@@ -137,7 +137,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CCLLCImportExtension.cs" />
+    <Compile Include="JmclImportExtension.cs" />
     <Compile Include="PackageTemplate.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -156,9 +156,13 @@
     <None Include="DevOps\Install_PowerShell_Dependencies.ps1" />
     <None Include="DevOps\Install_SDK_Tools.ps1" />
     <None Include="DevOps\post-build.ps1" />
+    <None Include="DevOps\Stage-PortalChange.ps1" />
+    <None Include="DevOps\Upload-StagedPortalChanges.ps1" />
     <None Include="DevOps\Settings\DefaultSettings.ps1" />
     <None Include="DevOps\Tools\Adoxio.Dynamics.DevOps\Adoxio.Dynamics.DevOps.psd1" />
     <None Include="DevOps\Tools\Adoxio.Dynamics.DevOps\Adoxio.Dynamics.DevOps.psm1" />
+    <None Include="DevOps\Tools\CCLLC.Cds.DevOps\CCLLC.Cds.DevOps.PowerShell.psd1" />
+    <None Include="DevOps\Tools\CCLLC.Cds.DevOps\PSGetModuleInfo.xml" />
     <None Include="DevOps\Tools\ConfigurationMigration\DataMigrationUtility.exe.config" />
     <None Include="DevOps\Tools\ConfigurationMigration\LicenseTerms.docx" />
     <None Include="DevOps\Tools\ConfigurationMigration\Third Party Notices for Dynamics 365 SDK.docx" />
@@ -176,6 +180,11 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="DevOps\Tools\Adoxio.Dynamics.DevOps\Adoxio.Dynamics.ImportPackage.dll" />
+    <Content Include="DevOps\Tools\CCLLC.Cds.DevOps\CCLLC.Cds.DevOps.PowerShell.dll" />
+    <Content Include="DevOps\Tools\CCLLC.Cds.DevOps\DocumentFormat.OpenXml.dll" />
+    <Content Include="DevOps\Tools\CCLLC.Cds.DevOps\Microsoft.Crm.Sdk.Proxy.dll" />
+    <Content Include="DevOps\Tools\CCLLC.Cds.DevOps\Microsoft.Xrm.Sdk.dll" />
+    <Content Include="DevOps\Tools\CCLLC.Cds.DevOps\System.Management.Automation.dll" />
     <Content Include="DevOps\Tools\ConfigurationMigration\DataMigrationUtility.exe" />
     <Content Include="DevOps\Tools\ConfigurationMigration\Microsoft.Crm.Sdk.Proxy.dll" />
     <Content Include="DevOps\Tools\ConfigurationMigration\Microsoft.IdentityModel.Clients.ActiveDirectory.dll" />

@@ -70,7 +70,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CrmPluginRegistrationAttribute.cs" />
-    <Compile Include="_JmclSourcesSmokeTest\JmclSourcesSmokeTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

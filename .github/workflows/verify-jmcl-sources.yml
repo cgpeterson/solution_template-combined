@@ -1,0 +1,41 @@
+name: Verify JMCL Sources packaging (temporary)
+
+# TEMPORARY workflow. Its only job is to answer one question on
+# feature/jmcl-migration: does contentFiles with buildAction="Compile" from
+# the JMCL .Sources packages actually reach the compiler in Plugins.csproj,
+# which is a legacy, non-SDK-style project (required by spkl and strong
+# naming)? JMCL's own proof of that mechanism (samples/SourcePackageSmokeTest
+# in the JMCL repo) is an SDK-style project, a different NuGet/MSBuild code
+# path, so it does not prove this project shape works.
+#
+# Plugins/_JmclSourcesSmokeTest/JmclSourcesSmokeTest.cs references real types
+# from JMCL.Dataverse.Sdk.Sources and JMCL.Core.IocContainer.Sources. If this
+# build fails with CS0246, contentFiles is not wiring into this project
+# format and the App_Packages/packages.config removal on this branch needs
+# to be reverted. If it succeeds, the mechanism is proven here.
+#
+# Delete this workflow, the smoke-test file, and its ItemGroup entry in
+# Plugins.csproj once this question is answered either way.
+
+on:
+  push:
+    branches: [ feature/jmcl-migration ]
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: nuget/setup-nuget@v3
+        with:
+          nuget-version: '6.x'
+
+      - uses: microsoft/setup-msbuild@v3
+
+      - name: Restore Plugins.csproj (PackageReference)
+        run: msbuild Plugins\Plugins.csproj /t:Restore /verbosity:normal
+
+      - name: Build Plugins.csproj
+        run: msbuild Plugins\Plugins.csproj /p:Configuration=Debug /verbosity:normal

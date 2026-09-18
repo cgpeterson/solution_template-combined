@@ -25,7 +25,7 @@ namespace SolutionTemplate.JmclSourcesSmokeTest
         public SmokeTestPlugin() : base(null, null) { }
 
         // Also proves JMCL.Core.IocContainer.Sources compiled in, since
-        // CDSPlugin.Container is typed against JMCL.Core.IocContainer.IIocContainer.
-        public JMCL.Core.IocContainer.IIocContainer Probe => Container;
+        // CDSPlugin.Container is typed against JMCL.Core.IIocContainer.
+        public JMCL.Core.IIocContainer Probe => Container;
     }
 }

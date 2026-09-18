@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using CCLLC.Core;
+using JMCL.Core;
 
 namespace PluginAssemblyName.UnitTest.ExecutionContext
 {

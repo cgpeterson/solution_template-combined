@@ -1,6 +1,6 @@
 ﻿using System;
 using Microsoft.Xrm.Sdk;
-using CCLLC.Core;
+using JMCL.Core;
 using Microsoft.Xrm.Sdk.Query;
 
 namespace PluginAssemblyName.UnitTest.ExecutionContext

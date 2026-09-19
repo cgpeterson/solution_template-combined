@@ -1,4 +1,4 @@
-﻿# Add steps that publish symbols, save build artifacts, and more:
+# Add steps that publish symbols, save build artifacts, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
 name: '$(Build.SourceBranchName)$(rev:.r)'
 
@@ -7,7 +7,7 @@ trigger:
 - dev
 
 pool:
-  name: IIC Jump Boxes
+  vmImage: 'windows-latest'
 
 variables:
   solution: '**/**.sln'
@@ -16,16 +16,52 @@ variables:
   CRM_SDK_PATH: 'C:/hostedtoolcache/windows\CdsDevTools\Tools'
   Version.Revision: '$(Build.SourceBranchName)'
   Version.Formatted: '$(Build.BuildNumber)'
+  # Set this to the {org-guid}/{feed-guid} of this project's own ADO Artifacts feed
+  # (where the CDS dependency artifact package will be published on dev builds)
+  ProjectFeedId: 'replace-with-your-org-guid/replace-with-your-feed-guid'
 
 steps:
 - task: NuGetToolInstaller@1
 
 - task: PowerShell@2
-  displayName: 'Install Supporting PowerShell Modules' 
+  displayName: 'Enforce branch merge rules'
   inputs:
     targetType: 'inline'
     script: |
-      # Import supporting PowerShell modules      
+      if ($env:BUILD_SOURCEBRANCHNAME -ne 'merge') {
+          Write-Host "Not a PR merge build — skipping branch merge enforcement."
+          exit 0
+      }
+
+      $target = $env:SYSTEM_PULLREQUEST_TARGETBRANCH -replace '^refs/heads/', ''
+      $source = $env:SYSTEM_PULLREQUEST_SOURCEBRANCH -replace '^refs/heads/', ''
+      Write-Host "PR: '$source' -> '$target'"
+
+      if ($target -eq 'dev') {
+          if ($source -notlike 'feature/*' -and $source -notlike 'bugfix/*' -and $source -notlike 'issue/*' -and $source -notlike 'hotfix/*') {
+              Write-Host "##vso[task.logissue type=error]Only 'feature/*', 'bugfix/*', 'issue/*', or 'hotfix/*' branches may merge into 'dev'. Attempted: '$source' -> '$target'."
+              exit 1
+          }
+      } elseif ($target -like 'release/*') {
+          if ($source -ne 'dev' -and $source -notlike 'hotfix/*') {
+              Write-Host "##vso[task.logissue type=error]Only 'dev' or 'hotfix/*' branches may merge into 'release/*'. Attempted: '$source' -> '$target'."
+              exit 1
+          }
+      } elseif ($target -eq 'main') {
+          if ($source -notlike 'release/*') {
+              Write-Host "##vso[task.logissue type=error]Only 'release/*' branches may merge into 'main'. Attempted: '$source' -> '$target'."
+              exit 1
+          }
+      }
+
+      Write-Host "Branch merge check passed."
+
+- task: PowerShell@2
+  displayName: 'Install Supporting PowerShell Modules'
+  inputs:
+    targetType: 'inline'
+    script: |
+      # Import supporting PowerShell modules
       Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
       Install-Module -Name Microsoft.Xrm.Data.Powershell -Force -Verbose -Scope CurrentUser
       Install-Module -Name Microsoft.Xrm.Tooling.ConfigurationMigration -Force -Verbose -Scope CurrentUser
@@ -44,15 +80,23 @@ steps:
       [xml] $xdoc = get-content $fileName
       $version = $xdoc.SelectSingleNode('//Version')
       $version.InnerText = $Env:Version_Formatted
-      $xdoc.Save($fileName) 
-      
+      $xdoc.Save($fileName)
+
 - task: NuGetCommand@2
   displayName: 'NuGet Solution Restore'
   inputs:
     command: 'restore'
     restoreSolution: '$(solution)'
     feedsToUse: 'select'
-    vstsFeed: '0ddd6187-3494-46a5-b396-8f7be21064a3/dca352bc-32b5-4be1-8ff4-feab1bb0eb73'
+    vstsFeed: '$(ProjectFeedId)'
+
+- task: PowerShell@2
+  displayName: 'Install PAC CLI'
+  inputs:
+    targetType: 'inline'
+    script: |
+      dotnet tool install --global Microsoft.PowerApps.CLI.Tool
+      Write-Host "##vso[task.prependpath]$env:USERPROFILE\.dotnet\tools"
 
 - task: VSBuild@1
   inputs:
@@ -74,7 +118,7 @@ steps:
     versioningScheme: 'byEnvVar'
     versionEnvVar: 'Version.Formatted'
 
-- task: NuGetAuthenticate@0
+- task: NuGetAuthenticate@1
   displayName: 'NuGet Authenticate'
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/dev'))
 
@@ -82,10 +126,10 @@ steps:
   displayName: 'NuGet Push Cds Dependency Artifact Package'
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/dev'))
   inputs:
-    command: 'push'   
+    command: 'push'
     packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
     nuGetFeedType: 'internal'
-    publishVstsFeed: '0ddd6187-3494-46a5-b396-8f7be21064a3/dca352bc-32b5-4be1-8ff4-feab1bb0eb73'
+    publishVstsFeed: '$(ProjectFeedId)'
     allowPackageConflicts: true
 
 - task: CopyFiles@2

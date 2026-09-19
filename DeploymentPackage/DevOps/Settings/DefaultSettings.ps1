@@ -1,4 +1,4 @@
-param (
+﻿param (
     [Parameter(Mandatory)]
     [ValidateNotNullOrEmpty()]
     [PSCustomObject]
@@ -42,6 +42,9 @@ $testDataFolder = "$projectRoot\TestData"
 $testDataTestPath = "$testDataFolder\data_schema.xml"
 [Bool]$testDataExists = Test-Path -Path $testDataTestPath
 
+$documentTemplateFolder = "$projectRoot\DocumentTemplates"
+[Bool]$documentTemplatesExist = Test-Path -PathType Container -Path $documentTemplateFolder
+
 $dependencyFolder = "$projectRoot\CdsDependencies"
 
 # build out list of files based on the dependency file name in the solution settings which are ordered in the way the 
@@ -62,8 +65,14 @@ if($solutionExists){
 [string[]]$dependencyConfigDataFiles = Get-ChildItem -Path $dependencyFolder -File -Filter "ConfigData.zip" -Recurse | Select-Object -ExpandProperty FullName
 [string[]]$dependencyTestDataFiles = Get-ChildItem -Path $dependencyFolder -File -Filter "TestData.zip" -Recurse | Select-Object -ExpandProperty FullName
 
+# Document Templates are captured directly from the DocumentTemplates folder
+if($documentTemplatesExist){
+[string[]]$documentTemplateFiles = Get-ChildItem -Path $documentTemplateFolder -File | Select-Object -ExpandProperty Fullname
+}
 
-@{  
+@{
+	SolutionName = $solutionName
+
 	# ExportSolutions is used by export.ps1. Defines the managed and unmanaged solution(s) to export
 	# and the location to place the exported zip files.
 	ExportSolutions = [PSCustomObject]@{
@@ -71,13 +80,13 @@ if($solutionExists){
         Solutions = @(
             [PSCustomObject]@{
                 SolutionName = $solutionName
-                Managed = $false
-                ZipFile = "$exportFolder\ExportedSolution.zip"
+                Managed = $true
+                ZipFile = "$exportFolder\ExportedSolution_managed.zip"
             },
             [PSCustomObject]@{
                 SolutionName = $solutionName
-                Managed = $true
-                ZipFile = "$exportFolder\ExportedSolution_managed.zip"
+                Managed = $false
+                ZipFile = "$exportFolder\ExportedSolution.zip"
             }
         )
     }
@@ -150,6 +159,15 @@ if($solutionExists){
         Folder = "$testDataFolder"
         ZipFile = "$importFolder\TestData.zip"
 		DependencyDataFiles = $dependencyTestDataFiles
+    }
+
+    # DocumentTemplates is used by import.ps1. Defines the location of any document  templates that should be
+    # imported.
+    DocumentTemplates = [PSCustomObject]@{
+        CrmConnectionParameters = $CrmConnectionParameters
+        Exists = $documentTemplatesExist
+        Folder = $documentTemplateFolder
+        Files = $documentTemplateFiles
     }
 
 	# CrmPackageDefinition is used by import.ps1. Defines the solutions and data that will be included 

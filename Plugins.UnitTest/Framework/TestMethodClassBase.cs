@@ -1,7 +1,7 @@
 ﻿using DLaB.Xrm.Test;
 using DLaB.Xrm.Test.Builders;
 using Microsoft.Xrm.Sdk;
-using CCLLC.Core;
+using JMCL.Core;
 
 namespace PluginAssemblyName.UnitTest
 {

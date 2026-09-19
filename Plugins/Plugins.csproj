@@ -39,12 +39,17 @@
     <AssemblyOriginatorKeyFile>plugin.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.Crm.Sdk.Proxy, Version=9.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.CrmSdk.CoreAssemblies.9.0.2.26\lib\net462\Microsoft.Crm.Sdk.Proxy.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Xrm.Sdk, Version=9.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.CrmSdk.CoreAssemblies.9.0.2.26\lib\net462\Microsoft.Xrm.Sdk.dll</HintPath>
-    </Reference>
+    <PackageReference Include="CCLLC.CDS.ProxyBuilder" Version="1.0.3" />
+    <PackageReference Include="JMCL.Core.IocContainer.Sources" Version="1.0.1" />
+    <PackageReference Include="JMCL.Core.Net.Sources" Version="1.0.1" />
+    <PackageReference Include="JMCL.Core.ProcessModel.Sources" Version="1.0.1" />
+    <PackageReference Include="JMCL.Dataverse.Data.Sources" Version="1.0.1" />
+    <PackageReference Include="JMCL.Dataverse.Sdk.Sources" Version="1.0.1" />
+    <PackageReference Include="Microsoft.CrmSdk.CoreAssemblies" Version="9.0.2.42" />
+    <PackageReference Include="Microsoft.CrmSdk.CoreTools" Version="9.1.0.25" />
+    <PackageReference Include="spkl" Version="1.0.431" />
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.DirectoryServices" />
@@ -64,85 +69,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.1.4.13\CDSExecutionContext.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.1.4.13\CDSExecutionContextFactory.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.1.4.13\CDSPlugin.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.1.4.13\CDSPluginExecutionContext.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.1.4.13\EnhancedOrganizationService.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.1.4.13\Enums\eRunAs.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.1.4.13\EnvironmentVariablesDataConnector.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.1.4.13\Extensions\ProcessModelExtension.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.1.4.13\Interfaces\ICDSExecutionContext.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.1.4.13\Interfaces\ICDSExecutionContextFactory.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.1.4.13\Interfaces\ICDSPlugin.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.1.4.13\Interfaces\ICDSPluginExecutionContext.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.1.4.13\Interfaces\IEnhancedOrganizationService.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.1.4.13\Interfaces\IPluginEventResgistration.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.1.4.13\Interfaces\IXmlConfigurationResource.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.1.4.13\Interfaces\IXmlConfigurationResourceFactory .cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.1.4.13\MessageNames.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.1.4.13\Registrations\ActionEventRegistration.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.1.4.13\Registrations\CreateEventRegistration.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.1.4.13\Registrations\DeleteEventRegistration.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.1.4.13\Registrations\PluginEventRegistration.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.1.4.13\Registrations\QueryEventRegistration.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.1.4.13\Registrations\RetrieveEventRegistration.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.1.4.13\Registrations\UpdateEventRegistration.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.1.4.13\XmlConfigurationResource.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.1.4.13\XmlConfigurationResourceFactory.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.Data.1.2.0.10\AttributeEqualityComparer.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.Data.1.2.0.10\Condition.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.Data.1.2.0.10\EntityExtensions.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.Data.1.2.0.10\EntityProxy.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.Data.1.2.0.10\EntityReferenceExtensions.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.Data.1.2.0.10\ExecutableFluentQuery.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.Data.1.2.0.10\Filter.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.Data.1.2.0.10\Filterable.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.Data.1.2.0.10\FluentQuery.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.Data.1.2.0.10\IAttributeEqualityComparer.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.Data.1.2.0.10\ICondition.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.Data.1.2.0.10\IExecutableFluentQuery.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.Data.1.2.0.10\IFilter.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.Data.1.2.0.10\IFilterable.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.Data.1.2.0.10\IFluentQuery.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.Data.1.2.0.10\IJoinedEntity.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.Data.1.2.0.10\IQueryEntity.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.Data.1.2.0.10\IQueryExpressionBuilder.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.Data.1.2.0.10\JoinedEntity.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.Data.1.2.0.10\OrganizationServiceExtensions.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.Data.1.2.0.10\ParameterCollectionExtensions.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.Data.1.2.0.10\QueryEntity.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.Data.1.2.0.10\QueryExpressionBuilder.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.Data.1.2.0.10\QueryExpressionExtensions.cs" />
-    <Compile Include="App_Packages\CCLLC.CDS.Sdk.Data.1.2.0.10\TheLaBarExtensions.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.IocContainer.2.0.1\ContainerContract.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.IocContainer.2.0.1\ContractModifiers.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.IocContainer.2.0.1\Interfaces\IContainerContract.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.IocContainer.2.0.1\Interfaces\IContractModifiers.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.IocContainer.2.0.1\Interfaces\IIocContainer.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.IocContainer.2.0.1\Interfaces\IReadOnlyIocContainer.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.IocContainer.2.0.1\IocContainer.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.Net.1.1.1\APIEndpoint.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.Net.1.1.1\HttpWebRequestWrapper.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.Net.1.1.1\HttpWebResponseWrapper.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.Net.1.1.1\Interfaces\IAPIEndpoint.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.Net.1.1.1\Interfaces\IWebRequest.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.Net.1.1.1\Interfaces\IWebRequestFactory.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.Net.1.1.1\Interfaces\IWebResponse.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.Net.1.1.1\WebRequestFactory.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.ProcessModel.1.1.5\AssemblyCache.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.ProcessModel.1.1.5\DefaultCache.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.ProcessModel.1.1.5\Enums\eSeverityLevel.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.ProcessModel.1.1.5\Interfaces\ICache.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.ProcessModel.1.1.5\Interfaces\IDataService.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.ProcessModel.1.1.5\Interfaces\IProcessExecutionContext.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.ProcessModel.1.1.5\Interfaces\IRecordPointer.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.ProcessModel.1.1.5\Interfaces\ISettingsProvider.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.ProcessModel.1.1.5\Interfaces\ISettingsProviderDataConnector.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.ProcessModel.1.1.5\Interfaces\ISettingsProviderFactory.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.ProcessModel.1.1.5\RecordPointer.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.ProcessModel.1.1.5\SettingsProvider.cs" />
-    <Compile Include="App_Packages\CCLLC.Core.ProcessModel.1.1.5\SettingsProviderFactory.cs" />
     <Compile Include="CrmPluginRegistrationAttribute.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -151,7 +77,6 @@
     <None Include="bin\coretools\LicenseTerms.docx" />
     <None Include="bin\coretools\SolutionPackager.exe.config" />
     <None Include="codgen\proxybuilder.bat" />
-    <None Include="packages.config" />
     <None Include="plugin.snk" />
     <None Include="proxies.json" />
     <None Include="ProxyTemplate.t4" />

@@ -15,7 +15,11 @@ try{
     else{
         & "$PSScriptRoot\Import.ps1" -ConnectionName DummyConnection -PackageType Unmanaged -Actions New-CrmPackage
     }
-    & "$PSScriptRoot\Doctoring\Remove-KeysFromMissingDependencies.ps1" -SolutionFolderPath "$(Split-Path $PSScriptRoot)\CdsSolution"
+    # Skipped until the solution is first exported (new projects have no CdsSolution yet).
+    $solutionFolder = "$(Split-Path $PSScriptRoot)\CdsSolution"
+    if(Test-Path "$solutionFolder\Other\solution.xml"){
+        & "$PSScriptRoot\Doctoring\Remove-KeysFromMissingDependencies.ps1" -SolutionFolderPath $solutionFolder
+    }
 }
 catch{
 	$_

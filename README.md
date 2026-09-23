@@ -24,7 +24,7 @@ DeploymentPackage/              # Dataverse solution deployment package
       CoreTools/
   CdsArtifacts.nuspec           # Package manifest for the solution artifact package
 azure-pipelines.yml             # CI/CD pipeline
-NuGet.config                    # restorePackagesPath setting (required for tool discovery)
+NuGet.config                    # globalPackagesFolder setting (required for tool discovery)
 ```
 
 ## Getting Started (New Project)
@@ -50,7 +50,7 @@ This solution uses `PackageReference`-style NuGet references. Use `nuget.exe res
 
 After restore, build the solution normally via Visual Studio or MSBuild. JMCL `.Sources` packages deliver source files via NuGet `contentFiles` — no manual copy step is needed.
 
-> **Important**: Do not remove `restorePackagesPath` from `NuGet.config`. The `spkl` and `CCLLC.CDS.ProxyBuilder` tools are discovered at build time by recursively searching the solution-local `packages\` folder. Removing this setting silently breaks those tools.
+> **Important**: Do not remove `globalPackagesFolder` from `NuGet.config`. The `spkl` and `JMCL.Dataverse.ProxyBuilder` tools are found by their batch scripts (`Plugins\spkl\deploy-plugins.bat`, `Plugins\codgen\proxybuilder.bat`), which recursively search the solution-local `packages\` folder. Removing this setting, or renaming it to `restorePackagesPath` (not a NuGet.config key, so NuGet ignores it), silently breaks those tools.
 
 ## NuGet Packages
 
@@ -63,7 +63,7 @@ JMCL framework packages are consumed from the public **nuget.org** feed — no p
 | `JMCL.Core.IocContainer.Sources` | IoC container |
 | `JMCL.Core.Net.Sources` | HTTP web request utilities |
 | `JMCL.Core.ProcessModel.Sources` | Process model interfaces and caching |
-| `CCLLC.CDS.ProxyBuilder` | Proxy code generation tool |
+| `JMCL.Dataverse.ProxyBuilder` | Proxy code generation tool (`Plugins\codgen\proxybuilder.bat`); signs in to Dataverse with MSAL |
 
 ## Branch Strategy
 

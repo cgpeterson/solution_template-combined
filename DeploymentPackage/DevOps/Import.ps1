@@ -167,8 +167,17 @@ if($settings.CrmPackageDefinition -and ("All" -in $Actions -or 'New-CrmPackage' 
         }
     }
 
-    Write-Host("Creating Deployment Package")
-    $settings.CrmPackageDefinition | New-CrmPackage
+    # A new project has no CdsSolution folder until its solution is first exported, and so
+    # nothing to package. Skip rather than fail, or every build of a fresh project fails in
+    # this post-build step.
+    $solutionZipFiles = @($settings.CrmPackageDefinition | ForEach-Object { $_.SolutionZipFiles } | Where-Object { $_ })
+    if($solutionZipFiles.Count -eq 0) {
+        Write-Host("No solutions to package (DeploymentPackage\CdsSolution has not been exported yet); skipping deployment package creation")
+    }
+    else {
+        Write-Host("Creating Deployment Package")
+        $settings.CrmPackageDefinition | New-CrmPackage
+    }
 }
 
 # pac auth, then solution import (dependency solutions first), then data import.

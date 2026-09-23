@@ -40,12 +40,12 @@
     <AssemblyOriginatorKeyFile>plugin.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CCLLC.CDS.ProxyBuilder" Version="1.0.3" />
-    <PackageReference Include="JMCL.Core.IocContainer.Sources" Version="1.0.1" />
-    <PackageReference Include="JMCL.Core.Net.Sources" Version="1.0.1" />
-    <PackageReference Include="JMCL.Core.ProcessModel.Sources" Version="1.0.1" />
-    <PackageReference Include="JMCL.Dataverse.Data.Sources" Version="1.0.1" />
-    <PackageReference Include="JMCL.Dataverse.Sdk.Sources" Version="1.0.1" />
+    <PackageReference Include="JMCL.Dataverse.ProxyBuilder" Version="1.0.2" />
+    <PackageReference Include="JMCL.Core.IocContainer.Sources" Version="1.0.2" />
+    <PackageReference Include="JMCL.Core.Net.Sources" Version="1.0.2" />
+    <PackageReference Include="JMCL.Core.ProcessModel.Sources" Version="1.0.2" />
+    <PackageReference Include="JMCL.Dataverse.Data.Sources" Version="1.0.2" />
+    <PackageReference Include="JMCL.Dataverse.Sdk.Sources" Version="1.0.2" />
     <PackageReference Include="Microsoft.CrmSdk.CoreAssemblies" Version="9.0.2.42" />
     <PackageReference Include="Microsoft.CrmSdk.CoreTools" Version="9.1.0.25" />
     <PackageReference Include="spkl" Version="1.0.431" />

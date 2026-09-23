@@ -8,6 +8,16 @@
   <PropertyGroup Label="Configuration">
     <Import_RootNamespace>Shared.Proxies</Import_RootNamespace>
   </PropertyGroup>
+  <!--
+    Wildcards, not per-file entries: Plugins\codgen\proxybuilder.bat regenerates these
+    folders (one file per entity, global option set and message), so an explicit list
+    would silently stop compiling any proxy added after the last manual edit.
+  -->
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Entities\*.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GlobalEnums\*.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Messages\*.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Entities\" />
     <Folder Include="$(MSBuildThisFileDirectory)GlobalEnums\" />

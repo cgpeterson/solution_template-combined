@@ -59,7 +59,7 @@ foreach (var entity in Model.Entities) {#>
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1720:Identifier contains type name", Justification = "<Pending>")]
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1056:URI-like properties should not be strings", Justification = "<Pending>")]
 	[EntityLogicalName("<#=entity.LogicalName#>")]
-	public partial class <#=entity.DisplayName#> : CCLLC.CDS.Sdk.EarlyBound.EntityProxy
+	public partial class <#=entity.DisplayName#> : JMCL.Dataverse.Sdk.EarlyBound.EntityProxy
 	{
 		public const string EntityLogicalName = "<#=entity.LogicalName#>";
 		public const string PrimaryIdAttribute = "<#=entity.PrimaryKey.LogicalName#>";

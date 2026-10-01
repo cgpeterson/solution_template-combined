@@ -9,6 +9,14 @@ using System.Threading.Tasks;
 [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = true)]
 public class CrmPluginRegistrationAttribute : Attribute
 {
+    /// <summary>
+    /// Custom API registration: only the API's unique name is required. The API itself is defined in the solution.
+    /// </summary>
+    public CrmPluginRegistrationAttribute(string message)
+    {
+        Message = message;
+        IsolationMode = IsolationModeEnum.Sandbox;
+    }
 
     public CrmPluginRegistrationAttribute(
         string message,

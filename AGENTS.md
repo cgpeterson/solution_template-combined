@@ -6,6 +6,7 @@ Instructions for AI coding agents maintaining **this** repo: the template, `New-
 
 - `SolutionTemplate/` is copied into each new project by `New-Project.ps1`. Only git-tracked files are copied.
 - `docs/`, `README.md`, `AGENTS.md` and `New-Project.ps1` at the root are **not** copied.
+- `SolutionTemplate/docs/` **is** copied. It holds guides that agents and developers need inside each project, such as `Plugin-Development.md`. Root `docs/` is for setting up machines and projects.
 - Files under `SolutionTemplate/` must not link to `../docs/...` or other paths outside the folder; those links break in generated projects. Refer to "the `solution_template` repo's `docs/`" instead.
 
 ## Tokens

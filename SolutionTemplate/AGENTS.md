@@ -78,38 +78,47 @@ When creating or proposing tables, columns or relationships:
 
 ## Plugin Pattern (JMCL `CDSPlugin`)
 
-All plugin classes inherit from `CDSPlugin` (`JMCL.Dataverse.Sdk`). The constructor declares which events the plugin handles and the framework dispatches to the handler — do not switch on `context.MessageName`.
+**Read `docs/Plugin-Development.md` before writing or changing a plugin.** It has worked examples of every pattern below: validation, derived fields, related-record updates, Custom APIs, view filters, external calls, caching, configuration and tests.
+
+All plugin classes inherit from `CDSPlugin` (`JMCL.Dataverse.Sdk`). The constructor registers **typed** handlers, and the framework dispatches to them. Don't switch on `context.MessageName`.
 
 ```csharp
-public class AccountPreCreate : CDSPlugin
+[CrmPluginRegistration(MessageNameEnum.Update, AbcCase.EntityLogicalName, StageEnum.PreOperation,
+    ExecutionModeEnum.Synchronous, AbcCase.Fields.Statuscode, "SetCaseClosedOnPlugin: PreOperation Update abc_case",
+    1000, IsolationModeEnum.Sandbox, Id = "<new GUID>",
+    Image1Type = ImageTypeEnum.PreImage, Image1Name = "PreImage", Image1Attributes = AbcCase.Fields.AbcClosedOn)]
+public class SetCaseClosedOnPlugin : CDSPlugin
 {
-    public AccountPreCreate(string unsecureConfig, string secureConfig)
-        : base(unsecureConfig, secureConfig)
+    public SetCaseClosedOnPlugin(string unsecureConfig, string secureConfig) : base(unsecureConfig, secureConfig)
     {
-        RegisterEventHandler(
-            entityName: Account.EntityLogicalName,
-            messageName: MessageNames.Create,
-            stage: ePluginStage.PreOperation,
-            handler: OnAccountPreCreate);
+        RegisterUpdateHandler<AbcCase>(ePluginStage.PreOperation, OnUpdate);
     }
 
-    private void OnAccountPreCreate(ICDSPluginExecutionContext context)
+    private static void OnUpdate(ICDSPluginExecutionContext context, AbcCase target)
     {
-        var target = context.TargetEntity.ToEntity<Account>();
-        // ...
+        string processName = $"{nameof(SetCaseClosedOnPlugin)}.{nameof(OnUpdate)}";
+        context.Trace($"Entered {processName}");
+
+        if (target.Statuscode != AbcCase.eStatuscode.Closed)
+        {
+            context.Trace($"Exiting {processName} - not closing.");
+            return;
+        }
+
+        target.AbcClosedOn = DateTime.UtcNow;
     }
 }
 ```
 
-Useful `ICDSPluginExecutionContext` members:
-
-- `TargetEntity` — the incoming target
-- `PreMergedTarget` — the pre-image merged with the incoming target, so every field reflects the post-update value. Use it to read fields that the current operation didn't change. It is **not** the raw pre-image.
-- `PreImage` / `PostImage` — the raw registered images
-- `OrganizationService` / `ElevatedOrganizationService` — calling-user vs. system-user service
-- `Trace(...)` — write to the plugin trace log
-
-Plugin step registration for `spkl` deployment is declared with `CrmPluginRegistrationAttribute` (`Plugins/CrmPluginRegistrationAttribute.cs`) and configured in `Plugins/spkl.json`.
+- Use `RegisterCreateHandler<T>` / `RegisterUpdateHandler<T>` / `RegisterDeleteHandler<T>` / `RegisterQueryHandler<T>` (RetrieveMultiple) / `RegisterApiHandler<TRequest, TResponse>` (Custom API). Use `.ExecuteIf(...)` to skip the handler when the relevant columns aren't in the request.
+- Handlers are `private static` and stateless. Trace on entry and on every early exit.
+- In PreOperation, set values on `target`; don't call `Update()` on the record being saved.
+- On Update, `target` holds only the changed columns. Read the others from `context.PreImage` (register only the columns you need) or `context.PreMergedTarget` (pre-image with the incoming values applied).
+- `OrganizationService` runs as the calling user and `ElevatedOrganizationService` as the system. Elevate only when necessary.
+- Every `[CrmPluginRegistration]` gets its own new, permanent GUID `Id` and filtering attributes on Update. Custom APIs register with `[CrmPluginRegistration(SomeRequest.SchemaName)]`.
+- Put larger logic in `internal static` helpers under `Plugins/Helpers/`, and keep API classes thin.
+- `Plugins.csproj` and `Plugins.UnitTest.csproj` list files explicitly, so **add every new `.cs` file to the project**.
+- Every plugin gets unit tests in `Plugins.UnitTest/Tests/`, covering the early exits as well as the happy path.
 
 ## Code Standards
 

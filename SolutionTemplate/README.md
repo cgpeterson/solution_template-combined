@@ -27,6 +27,8 @@ DeploymentPackage/              # Dataverse solution deployment package
 azure-pipelines.yml             # CI/CD pipeline
 NuGet.config                    # globalPackagesFolder setting (required for tool discovery)
 AGENTS.md                       # Instructions for AI coding agents (Claude Code, Codex, Copilot, etc.)
+docs/
+  Plugin-Development.md         # Plugin patterns, registration, and testing guide
 .claude/                        # Claude Code permissions + settings.local.json.example
 .mcp.json                       # MCP servers (Azure DevOps, Dataverse) for AI agents
 ```

@@ -72,7 +72,7 @@ Building the `DeploymentPackage` project runs `Import.ps1 -Actions New-CrmPackag
 
 ## Plugins
 
-1. Write the plugin in `Plugins\`. Follow the patterns in the project's `AGENTS.md`.
+1. Write the plugin in `Plugins\`, following the project's `docs\Plugin-Development.md` (patterns, registration, testing and a step-by-step checklist).
 2. Build, then run the unit tests in `Plugins.UnitTest`.
 3. Register or update steps in your sandbox with `Plugins\spkl\deploy-plugins.bat`. It reads `CrmPluginRegistrationAttribute` declarations and `Plugins\spkl.json`.
 4. `Export.ps1` so the assembly and step registrations land in `CdsSolution\`.

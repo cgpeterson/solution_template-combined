@@ -35,6 +35,7 @@ Then follow [New Project Setup](docs/New-Project-Setup.md).
 | [Solution Structure](docs/Solution-Structure.md) | What each project and folder is for, and what the pipeline does |
 | [Developer Guidelines](docs/Developer-Guidelines.md) | Implementation decision tree and naming conventions |
 | [AI Agent Setup](docs/AI-Agent-Setup.md) | `AGENTS.md`, Claude Code settings, Dataverse and work-tracker MCP servers |
+| [Plugin Development](SolutionTemplate/docs/Plugin-Development.md) | Plugin patterns, registration and testing. Copied into every project as `docs/Plugin-Development.md`. |
 
 ## Maintaining the template
 

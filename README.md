@@ -1,106 +1,44 @@
-# CDS Solution Template
+# JMCL Solution Template
 
-This is the base template for JMCL-managed Power Apps/Dataverse solution repos. New client solution repos are created from this template using `New-Project.ps1` in the `deployment_template` repo.
+The starting point for JMCL-managed Power Apps/Dataverse solution repos, plus the documentation for setting up and working in them.
 
-## Project Structure
+`SolutionTemplate/` is the part that gets copied for each new project. Everything else here (this README, `docs/`, `New-Project.ps1`) is about creating and maintaining projects, and isn't copied.
+
+## Layout
 
 ```
-Plugins/                        # C# plugin assembly
-  codgen/                       # Generated entity proxy files
-  Shared.Proxies -> ../Shared.Proxies (shared project reference)
-  ProxyTemplate.t4              # T4 template driving proxy code generation
-  spkl.json                     # spkl plugin deployment configuration
-  Plugins.csproj                # NuGet PackageReference (JMCL .Sources packages)
-Shared.Proxies/                 # Shared project for proxies referenced by Plugins and WebResources
-WebResources/                   # TypeScript/JavaScript web resources
-Plugins.UnitTest/               # Unit test project
-CodeApps/                       # Power Apps code apps (one subfolder per app) - see CodeApps/README.md
-DeploymentPackage/              # Dataverse solution deployment package
-  CdsSolution/                  # Unpacked solution XML
-  DevOps/                       # Import/export scripts and tools
-    Tools/
-      Adoxio.Dynamics.DevOps/
-      CCLLC.Cds.DevOps/
-      ConfigurationMigration/
-      CoreTools/
-  CdsArtifacts.nuspec           # Package manifest for the solution artifact package
-azure-pipelines.yml             # CI/CD pipeline
-NuGet.config                    # globalPackagesFolder setting (required for tool discovery)
-AGENTS.md                       # Instructions for AI coding agents (Claude Code, Codex, Copilot, etc.)
-.claude/                        # Claude Code permissions + settings.local.json.example
-.mcp.json                       # MCP servers (Azure DevOps, Dataverse) for AI agents
+New-Project.ps1        # Creates a new solution repo from SolutionTemplate/
+docs/                  # Setup and how-to guides (not copied into projects)
+SolutionTemplate/      # The template copied for each new project
+  <solution>.sln, Plugins/, Plugins.UnitTest/, Shared.Proxies/, WebResources/,
+  CodeApps/, DeploymentPackage/, azure-pipelines.yml, AGENTS.md, README.md, ...
+AGENTS.md              # Instructions for agents maintaining this repo
 ```
 
-## Getting Started (New Project)
-
-New projects are created automatically via `New-Project.ps1` in the `deployment_template` repo. After the script runs, complete these manual steps:
-
-1. **Create a Dataverse sandbox environment** for development.
-2. **Create an empty solution** in that sandbox:
-   - Unique name: matches the `SolutionName` you passed to `New-Project.ps1`
-   - Publisher: with the prefix matching `PublisherPrefix`
-   - Version: `0.0.0.1`
-3. **Export the solution** (unmanaged) and commit `solution.xml` to the `dev` branch.
-4. **Update `ProjectFeedId`** in `azure-pipelines.yml` with the client project's ADO Artifacts feed ID (`{org-guid}/{feed-guid}`).
-5. **Update the agent pool** in `azure-pipelines.yml` if not using Microsoft-hosted agents.
-6. **Update `.mcp.json`** with the client's ADO organization/project, and copy `.claude/settings.local.json.example` to `.claude/settings.local.json` (gitignored) to supply local secrets.
-
-## Code Apps
-
-Power Apps code apps (standalone Vite/React SPAs) live under `CodeApps/<AppName>/`, one subfolder per app. See `CodeApps/README.md` for scaffolding, local dev, and publishing. Unlike web resources, code apps have no source-control-friendly XML/YAML representation to unpack from a solution. CI builds each app (`npm ci && npm run build`) to catch breakage, but publishing to an environment (`pa app push`) is still a manual step.
-
-## Building Locally
-
-This solution uses `PackageReference`-style NuGet references. Use `nuget.exe restore` rather than `dotnet restore` (the project is a legacy-format `.csproj`, not SDK-style):
+## Start a new project
 
 ```powershell
-& "C:\Users\<you>\AppData\Local\Microsoft\PowerAppsCLI\nuget.exe" restore "<solution>.sln" -ConfigFile NuGet.config
+.\New-Project.ps1 -Destination C:\Repos\contoso_claims `
+    -SolutionName ContosoClaims -PublisherPrefix cc -ClientPrefix Contoso -ClientName "Contoso Ltd"
 ```
 
-After restore, build the solution normally via Visual Studio or MSBuild. JMCL `.Sources` packages deliver source files via NuGet `contentFiles` — no manual copy step is needed.
+Then follow [New Project Setup](docs/New-Project-Setup.md).
 
-> **Important**: Do not remove `globalPackagesFolder` from `NuGet.config`. The `spkl` and `JMCL.Dataverse.ProxyBuilder` tools are found by their batch scripts (`Plugins\spkl\deploy-plugins.bat`, `Plugins\codgen\proxybuilder.bat`), which recursively search the solution-local `packages\` folder. Removing this setting, or renaming it to `restorePackagesPath` (not a NuGet.config key, so NuGet ignores it), silently breaks those tools.
+## Documentation
 
-## NuGet Packages
-
-JMCL framework packages are consumed from the public **nuget.org** feed — no private feed credentials are required for local restore.
-
-| Package | Purpose |
+| Guide | For |
 |---|---|
-| `JMCL.Dataverse.Sdk.Sources` | Core plugin base classes |
-| `JMCL.Dataverse.Data.Sources` | Fluent query builder and data extensions |
-| `JMCL.Core.IocContainer.Sources` | IoC container |
-| `JMCL.Core.Net.Sources` | HTTP web request utilities |
-| `JMCL.Core.ProcessModel.Sources` | Process model interfaces and caching |
-| `JMCL.Dataverse.ProxyBuilder` | Proxy code generation tool (`Plugins\codgen\proxybuilder.bat`); signs in to Dataverse with MSAL |
+| [Developer Machine Setup](docs/Developer-Machine-Setup.md) | Each developer, once per machine |
+| [New Project Setup](docs/New-Project-Setup.md) | Whoever creates a new solution repo |
+| [Environment and Service Principal Setup](docs/Environment-and-Service-Principal-Setup.md) | Setting up environments and deployment identities for a project |
+| [Daily Dev Workflow](docs/Daily-Dev-Workflow.md) | Import/export, plugins, proxies, web resources, Power Pages, code apps |
+| [Solution Structure](docs/Solution-Structure.md) | What each project and folder is for, and what the pipeline does |
+| [Developer Guidelines](docs/Developer-Guidelines.md) | Implementation decision tree and naming conventions |
+| [AI Agent Setup](docs/AI-Agent-Setup.md) | `AGENTS.md`, Claude Code settings, Dataverse and work-tracker MCP servers |
 
-## Branch Strategy
+## Maintaining the template
 
-```
-feature/*  \
-bugfix/*    +-->  dev  -->  release/*  -->  main
-issue/*    /                    ^
-hotfix/*  ----------------------+
-```
-
-| Branch | Merges into | Notes |
-|---|---|---|
-| `feature/*`, `bugfix/*`, `issue/*` | `dev` | Normal development work |
-| `hotfix/*` | `release/*` (then back-ported to `dev`) | Urgent fixes |
-| `dev` | `release/*` | Release candidates |
-| `release/*` | `main` | After deployment sign-off |
-
-All PRs require a passing CI build. The CI pipeline enforces source branch rules on every PR merge build — invalid source→target combinations fail the build immediately.
-
-## Token Reference
-
-When creating a new project manually (without `New-Project.ps1`), replace these tokens:
-
-| Token | Replace With |
-|---|---|
-| `[solutionname]` | Dataverse solution unique name |
-| `PluginAssemblyName` | Plugin assembly/namespace name |
-| `[publisherprefix]` | Dataverse publisher prefix |
-| `replace-with-your-org-guid/replace-with-your-feed-guid` | Client ADO Artifacts feed ID |
-| `replace-with-client-ado-org` | Client ADO organization/collection name (in `.mcp.json`) |
-| `replace-with-client-ado-project` | Client ADO project name (in `.mcp.json`) |
+- Change the template under `SolutionTemplate/`, keeping the tokens (`[solutionname]`, `PluginAssemblyName`, `[publisherprefix]`, ...) intact. The token list is in [New Project Setup](docs/New-Project-Setup.md#token-reference).
+- The DevOps scripts under `SolutionTemplate/DeploymentPackage/DevOps/` come from the `DeploymentTemplate.Sources` package built in the `deployment_template` repo. Change them there.
+- To test a change, run `New-Project.ps1` into a scratch folder, restore, and build the generated solution.
+- JMCL framework packages (`JMCL.*.Sources`, `JMCL.Dataverse.ProxyBuilder`) are built in the `JMCL` repo and published to nuget.org.

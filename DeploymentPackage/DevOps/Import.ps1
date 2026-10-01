@@ -41,12 +41,10 @@ Write-Host("Running Import.ps1")
 
 # Setup CRM_SDK_PATH variable and load required supporting modules
 $Env:CRM_SDK_PATH = "$PSScriptRoot\Tools"
-# Adoxio.Dynamics.DevOps stays for Compress-CrmData (local, no connection).
-# CCLLC.Cds.DevOps provides Import-DocumentTemplates. It requires Microsoft.Xrm.Data.Powershell,
-# so this is the one path deliberately left on the old Get-CrmConnection/ADAL stack: pac has no
-# equivalent command. Everything else above authenticates through pac (MSAL).
+# Adoxio.Dynamics.DevOps stays for Compress-CrmData / New-CrmPackage (local, no connection).
+# Everything that connects to an environment authenticates with MSAL: pac for solutions, data and
+# environment reset; MSAL.PS for Import-DocumentTemplates.ps1.
 Import-Module "$env:CRM_SDK_PATH\Adoxio.Dynamics.DevOps\Adoxio.Dynamics.DevOps.psd1" -Force
-Import-Module "$env:CRM_SDK_PATH\CCLLC.Cds.DevOps\CCLLC.Cds.DevOps.PowerShell.psd1" -Force
 
 $ConnectionParameters = switch ($ConnectionName) {
 	"MySandbox" {& "C:\\CrmConnection\MyCdsSandboxConnection.ps1"}
@@ -84,74 +82,46 @@ if($settings.ExtractedTestData `
 
 if($settings.ResetEnvironmentDefinition -and ("All" -in $Actions -or 'Invoke-ImportCrmPackage' -in $Actions -or 'Solutions' -in $Actions -or 'ConfigData' -in $Actions -or 'TestData' -in $Actions) -and $ResetEnvironment) {
 
-    # Still ADAL-based; pac has no reset-environment equivalent yet.
-	Add-PowerAppsAccount -Username $settings.ResetEnvironmentDefinition.Username -Password $settings.ResetEnvironmentDefinition.SecurePassword
+    # pac admin reset signs in through the pac auth profile (MSAL). It replaces Add-PowerAppsAccount /
+    # Reset-PowerAppEnvironment, which needed a stored username and password, and it waits for the
+    # reset to finish itself, so the old LastModifiedTime / Get-CrmOrganizations polling is gone.
+    $environmentUrl = $settings.ResetEnvironmentDefinition.EnvironmentUrl
+    if (-not $environmentUrl) {
+        throw "Connection file '$ConnectionName' has no PacConnectionParameter.EnvironmentUrl; -ResetEnvironment needs it."
+    }
 
-    $searchTerm = "*(" + $settings.ResetEnvironmentDefinition.EnvironmentName + ")*"    
-    $environment = Get-AdminPowerAppEnvironment -Filter $searchTerm | Select-Object -First 1   
-    
-    if(-not $environment){
-        Write-Error("Failed to find Environment")
-        Break
-    }   
+    $pacProfileName = $settings.SolutionName
+    pac auth create --url $environmentUrl --name $pacProfileName | Out-Null
+    pac auth select --name $pacProfileName | Out-Null
+
+    # Keep the environment's URL and display name across the reset, as the old script did.
+    $domainName = ([Uri]$environmentUrl).Host.Split('.')[0]
+    $friendlyName = $null
+    $whoAmI = pac org who --environment $environmentUrl 2>$null
+    if ($LASTEXITCODE -eq 0) {
+        $friendlyName = ($whoAmI | Select-String -Pattern '^\s*Friendly Name:\s*(.+?)\s*$' | Select-Object -First 1 |
+            ForEach-Object { $_.Matches[0].Groups[1].Value })
+    }
+    $displayName = if ($friendlyName) { "$friendlyName ($domainName)" } else { $environmentUrl }
 
     $title = 'Confirm Environment Reset'
-    $prompt = "Select Reset to reset '" + $environment.DisplayName + "'. Select Cancel to abort operation."
+    $prompt = "Select Reset to reset '" + $displayName + "'. Select Cancel to abort operation."
     $cancel = New-Object System.Management.Automation.Host.ChoiceDescription '&Cancel','Aborts the operation'
     $reset = New-Object System.Management.Automation.Host.ChoiceDescription '&Reset','Resets the environment'
     $options = [System.Management.Automation.Host.ChoiceDescription[]] ($cancel,$reset)
- 
+
     $choice = $host.ui.PromptForChoice($title,$prompt,$options,0)
 
     if($choice -ne 1){
         break
     }
-    Write-Host("Reseting " + $environment.DisplayName)           
+    Write-Host("Resetting " + $displayName + " (waits until the reset completes)...")
 
-    $domainName = $environment.DisplayName.Substring($environment.DisplayName.IndexOf("(")+1).Trim(")")
-    $friendlyName = $environment.DisplayName.Substring(0, $environment.DisplayName.IndexOf("(")).Trim()
-       
-    $resetRequest = [pscustomobject]@{
-        FriendlyName = $friendlyName
-        DomainName = $domainName
-        Purpose = "Developer sandbox"
-        BaseLanguageCode = 1033
-        Currency = [pscustomobject]@{
-            Code = "USD"
-            Name = "USD"
-            Symbol = "$"
-        }        
-        
-    }
-
-    ## Calling Reset-PowerAppEnvironment synchronously is buggy so this is a hack that executes the request asynchronously and then monitors the
-    ## LastModifiedTime to indicate when the reset is completed. This works based on the behavior that the LastModifiedTime is set when the 
-    ## reset request is processed and again when it is complete.
-    $resetEnvironmentResult = Reset-PowerAppEnvironment -EnvironmentName $environment.EnvironmentName -ResetRequestDefinition $resetRequest -WaitUntilFinished $false 
-    
-    if ($resetEnvironmentResult.Code -eq 202 -and $resetEnvironmentResult.Description -eq "Accepted") {
-        Write-Output "Reset request submitted. Sleeping until reset complete..."
-    } elseif ($resetEnvironmentResult.Errors) {
-        Write-Warning "Reset Error: $($resetEnvironmentResult.Error)"
-        Return
-    }
-    
-    $resetEnvironmentModifiedTime = Get-AdminPowerAppEnvironment -Filter $searchTerm | Select-Object -First 1 | select -Property LastModifiedTime
-    
-    do {
-        Start-Sleep -Seconds 30
-        Write-Verbose "Checking modified time for environment update..."
-        $testValue = Get-AdminPowerAppEnvironment -Filter $searchTerm | Select-Object -First 1 | select -Property LastModifiedTime        
-    } While ($testValue.LastModifiedTime -eq $resetEnvironmentModifiedTime.LastModifiedTime)
-
-    Write-Host "Environment updated. Waiting to until Organization connection can be acquired..."
-
-    do {
-        Start-Sleep -Seconds 15
-        $localCredential = New-Object System.Management.Automation.PSCredential ($settings.ResetEnvironmentDefinition.Username, $settings.ResetEnvironmentDefinition.SecurePassword) 
-        $activeOrganizations = Get-CrmOrganizations -DeploymentRegion NorthAmerica -OnLineType Office365 -Credential $localCredential 
-        $targetOrganizations = $activeOrganizations | Where-Object {$_.UrlHostName -eq $domainName}        
-   } While ($targetOrganizations.Length -ne 1)
+    # Language and currency are left at pac's defaults (English, USD), which is what the old script set.
+    $resetArgs = @('admin', 'reset', '--environment', $environmentUrl, '--domain', $domainName, '--purpose', 'Developer sandbox')
+    if ($friendlyName) { $resetArgs += @('--name', $friendlyName) }
+    pac @resetArgs
+    if ($LASTEXITCODE -ne 0) { throw "pac admin reset failed for '$environmentUrl' (exit $LASTEXITCODE)" }
 
     Write-Host "Reset completed."
 }
@@ -222,13 +192,19 @@ if($settings.DocumentTemplates `
     -and $settings.DocumentTemplates.Exists `
     -and $settings.DocumentTemplates.Files.Count -ge 1 `
     -and ("All" -in $Actions -or "Import-DocumentTemplates" -in $Actions)){
-        [HashTable]$crmConnectionParameters = $settings.DocumentTemplates.CrmConnectionParameters
+        if (-not $settings.DocumentTemplates.EnvironmentUrl) {
+            throw "Connection file '$ConnectionName' has no PacConnectionParameter.EnvironmentUrl; Import-DocumentTemplates needs it."
+        }
         [string]$path = $settings.DocumentTemplates.Folder
 
-        Write-Host("Importing Document Templates from $path")        
-        
-        $crmConnection = Get-CrmConnection @crmConnectionParameters
-        Import-DocumentTemplates -Conn @crmConnection -TemplateDirectory $path
+        Write-Host("Importing Document Templates from $path")
+
+        $templateArgs = @{
+            EnvironmentUrl    = $settings.DocumentTemplates.EnvironmentUrl
+            TemplateDirectory = $path
+        }
+        if ($settings.DocumentTemplates.TenantId) { $templateArgs.TenantId = $settings.DocumentTemplates.TenantId }
+        & "$PSScriptRoot\Import-DocumentTemplates.ps1" @templateArgs
 }
 
 # ---------------------------------------------------------------------------

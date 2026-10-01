@@ -3,34 +3,23 @@
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-$credential = (Get-Credential -UserName [myname]@[mydomain].com -Message "Enter credentials")
 $orgName = "[mydev]"
 
 # Your environment's URL. $orgName supplies the host name; the suffix varies by region and
 # cloud, so set it once against what the maker portal shows under Settings > Session details.
 # Commercial North America is crm.dynamics.com and GCC is crm9.dynamics.com; GCC High and DoD
-# are different domains entirely. This must agree with DeploymentRegion below.
+# are different domains entirely.
 $environmentUrl = "https://$orgName.crm.dynamics.com"
 
 @{
-    CrmConnectionParameter = @{    
-        OrganizationName = $orgName
-        OnlineType = "Office365"
-        DeploymentRegion = "NorthAmerica2"
-        Credential = $credential
-    }
-    PowerAppsConnectionParamter = @{
-        EnvironmentName = $orgName
-        Username = $credential.UserName
-        SecurePassword = $credential.Password
-    }
-
-    # Used by Export.ps1 / Import.ps1 for pac CLI auth (MSAL). Solution export/unpack and
-    # config/test data export/import no longer use the Credential above; that is now only
-    # read by Import-DocumentTemplates. First run opens an interactive browser sign-in and
-    # pac caches the profile after that.
+    # Used by Export.ps1 / Import.ps1 for everything that connects to the environment, all
+    # signed in with MSAL: pac for solutions, data and -ResetEnvironment, MSAL.PS for
+    # Import-DocumentTemplates. No password is stored or prompted for here. First run opens an
+    # interactive browser sign-in and the token is cached after that.
     PacConnectionParameter = @{
         EnvironmentUrl = $environmentUrl
+        # Optional: pin Import-DocumentTemplates' sign-in to one tenant (id or domain).
+        # TenantId = "[mytenant].onmicrosoft.com"
     }
 
     # Only EnvironmentUrl is per-developer here. Cloud, ProfileName, TenantId and the site

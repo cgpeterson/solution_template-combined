@@ -33,11 +33,11 @@ CLRVersion = '4.0'
 # Processor architecture (None, X86, Amd64) required by this module
 ProcessorArchitecture = 'None'
 
-# Modules that must be imported into the global environment prior to importing this module
-RequiredModules = @(
-    @{ModuleName='Microsoft.Xrm.Data.Powershell'; ModuleVersion='2.8.13'; Guid='7df9c140-65c3-4862-b3bc-73fad633aae4'},
-    @{ModuleName='Microsoft.Xrm.Tooling.ConfigurationMigration'; ModuleVersion='1.0.0.60'; Guid='162392C2-EDE9-4754-B5A3-7DE42E5C768C'}
-)
+# No RequiredModules. The functions Import.ps1, Export.ps1 and post-build.ps1 use (Compress-/Expand-CrmSolution,
+# Compress-/Expand-CrmData, New-CrmPackage) are local file operations. The ADAL-based connection functions
+# (Export-CrmSolutions, Invoke-ExportCrmSolution, Export-CrmData, Invoke-ImportCrmPackage, Test-CrmOrganization)
+# were removed; pac (MSAL) does that work now. Two optional functions still need a module imported first if used:
+# Edit-CrmSchemaFile (Microsoft.Xrm.Tooling.ConfigurationMigration) and Restore-CrmOrganization (on-premises).
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = @("*-*")

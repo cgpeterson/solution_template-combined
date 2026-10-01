@@ -6,17 +6,6 @@
 
 
 @{
-    CrmConnectionParameter = @{    
-        OrganizationName = $null
-        OnlineType = "Office365"
-        DeploymentRegion = "NorthAmerica"
-        Credential = $null
-    }
-    PowerAppsConnectionParamter = @{
-        EnvironmentName = $null
-        Username = $null
-        SecurePassword = $null
-    }
     PacConnectionParameter = @{
         EnvironmentUrl = $null
     }

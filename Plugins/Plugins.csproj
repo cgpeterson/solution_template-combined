@@ -46,9 +46,9 @@
     <PackageReference Include="JMCL.Core.ProcessModel.Sources" Version="1.0.2" />
     <PackageReference Include="JMCL.Dataverse.Data.Sources" Version="1.0.2" />
     <PackageReference Include="JMCL.Dataverse.Sdk.Sources" Version="1.0.2" />
-    <PackageReference Include="Microsoft.CrmSdk.CoreAssemblies" Version="9.0.2.42" />
-    <PackageReference Include="Microsoft.CrmSdk.CoreTools" Version="9.1.0.25" />
-    <PackageReference Include="spkl" Version="1.0.431" />
+    <PackageReference Include="Microsoft.CrmSdk.CoreAssemblies" Version="9.0.2.60" />
+    <PackageReference Include="Microsoft.CrmSdk.CoreTools" Version="9.1.0.217" />
+    <PackageReference Include="spkl" Version="1.0.640" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -74,37 +74,12 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="bin\coretools\CrmSvcUtil.exe.config" />
-    <None Include="bin\coretools\LicenseTerms.docx" />
-    <None Include="bin\coretools\SolutionPackager.exe.config" />
     <None Include="codgen\proxybuilder.bat" />
     <None Include="plugin.snk" />
     <None Include="proxies.json" />
     <None Include="ProxyTemplate.t4" />
     <None Include="spkl.json" />
     <None Include="spkl\deploy-plugins.bat" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="bin\coretools\CrmSvcUtil.exe" />
-    <Content Include="bin\coretools\CrmSvcUtil.xml" />
-    <Content Include="bin\coretools\Microsoft.ApplicationInsights.dll" />
-    <Content Include="bin\coretools\Microsoft.Crm.Sdk.Proxy.dll" />
-    <Content Include="bin\coretools\Microsoft.IdentityModel.Clients.ActiveDirectory.dll" />
-    <Content Include="bin\coretools\Microsoft.PowerApps.AppInsights.BatchedTelemetry.dll" />
-    <Content Include="bin\coretools\Microsoft.PowerApps.AppInsights.BatchedTelemetryChannel.dll" />
-    <Content Include="bin\coretools\Microsoft.Rest.ClientRuntime.dll" />
-    <Content Include="bin\coretools\Microsoft.Xrm.Sdk.Deployment.dll" />
-    <Content Include="bin\coretools\Microsoft.Xrm.Sdk.dll" />
-    <Content Include="bin\coretools\Microsoft.Xrm.Tooling.Connector.dll" />
-    <Content Include="bin\coretools\Microsoft.Xrm.Tooling.CrmConnectControl.dll" />
-    <Content Include="bin\coretools\Microsoft.Xrm.Tooling.Ui.Styles.dll" />
-    <Content Include="bin\coretools\Newtonsoft.Json.dll" />
-    <Content Include="bin\coretools\Other Redistributable.txt" />
-    <Content Include="bin\coretools\pacTelemetryUpload.exe" />
-    <Content Include="bin\coretools\SolutionPackager.exe" />
-    <Content Include="bin\coretools\SolutionPackagerLib.dll" />
-    <Content Include="bin\coretools\System.Diagnostics.DiagnosticSource.dll" />
-    <Content Include="bin\coretools\System.ValueTuple.dll" />
   </ItemGroup>
   <Import Project="..\Shared.Proxies\Shared.Proxies.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

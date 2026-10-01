@@ -9,7 +9,8 @@
     $PackageType = "Unmanaged"	
 )
 
-$CrmConnectionParameters = $ConnectionParameters.CrmConnectionParameter
+# Everything that connects to an environment signs in with MSAL (pac, MSAL.PS) against this URL.
+$PacConnectionParameters = $ConnectionParameters.PacConnectionParameter
 
 $scriptsRoot = Split-Path -Parent $PSScriptRoot
 $projectRoot = Split-Path -Parent $scriptsRoot
@@ -76,7 +77,6 @@ if($documentTemplatesExist){
 	# ExportSolutions is used by export.ps1. Defines the managed and unmanaged solution(s) to export
 	# and the location to place the exported zip files.
 	ExportSolutions = [PSCustomObject]@{
-        CrmConnectionParameters = $CrmConnectionParameters
         Solutions = @(
             [PSCustomObject]@{
                 SolutionName = $solutionName
@@ -103,7 +103,6 @@ if($documentTemplatesExist){
 
     # ExportConfigData is used by export.ps1. Defines configuration data to export and the zip file to put it in.
     ExportConfigData = [PSCustomObject]@{
-		CrmConnectionParameters = $CrmConnectionParameters
         SchemaFile ="$configDataSchemaFile"
         ZipFile = "$exportFolder\ConfigData.zip"
         }
@@ -117,7 +116,6 @@ if($documentTemplatesExist){
 
      # ExportTestData is used by export.ps1. Defines test data to export and the zip file to put it in.
     ExportTestData = [PSCustomObject]@{
-		CrmConnectionParameters = $CrmConnectionParameters
         SchemaFile ="$testDataSchemaFile"
         ZipFile = "$exportFolder\TestData.zip"
         }
@@ -164,7 +162,9 @@ if($documentTemplatesExist){
     # DocumentTemplates is used by import.ps1. Defines the location of any document  templates that should be
     # imported.
     DocumentTemplates = [PSCustomObject]@{
-        CrmConnectionParameters = $CrmConnectionParameters
+        EnvironmentUrl = $PacConnectionParameters.EnvironmentUrl
+        # Optional: pins the MSAL sign-in to one tenant (default: any work or school account)
+        TenantId = $PacConnectionParameters.TenantId
         Exists = $documentTemplatesExist
         Folder = $documentTemplateFolder
         Files = $documentTemplateFiles
@@ -181,17 +181,8 @@ if($documentTemplatesExist){
         }) 
 	
 
+    # ResetEnvironmentDefinition is used by import.ps1 -ResetEnvironment (pac admin reset).
     ResetEnvironmentDefinition = [PSCustomObject]@{
-        Username = $ConnectionParameters.PowerAppsConnectionParamter.Username
-        SecurePassword = [SecureString]$ConnectionParameters.PowerAppsConnectionParamter.SecurePassword
-        EnvironmentName =$CrmConnectionParameters.OrganizationName
-    }
-
-	# CrmPackageDeploymentDefinition is used by import.ps1. Provides instructions to the package deployer utility to select and import 
-    # a package.
-    CrmPackageDeploymentDefinition = [PSCustomObject]@{
-        CrmConnectionParameters = $CrmConnectionParameters
-		PackageFolder = $packageFolder
-		PackageName = $solutionSettings.PackageDllFile
+        EnvironmentUrl = $PacConnectionParameters.EnvironmentUrl
     }
 }

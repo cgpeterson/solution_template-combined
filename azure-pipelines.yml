@@ -19,9 +19,16 @@ variables:
   # Set this to the {org-guid}/{feed-guid} of this project's own ADO Artifacts feed
   # (where the CDS dependency artifact package will be published on dev builds)
   ProjectFeedId: 'replace-with-your-org-guid/replace-with-your-feed-guid'
+  # Tool versions are pinned deliberately so a Microsoft.PowerApps.CLI.Tool, Node.js, or PowerShell
+  # Gallery release can't silently break CI. Bump these on purpose, not by accident -
+  # check https://www.nuget.org/packages/Microsoft.PowerApps.CLI.Tool for newer PAC CLI releases.
+  PacCliVersion: '2.9.3'
+  NodeVersion: '22.x'
 
 steps:
 - task: NuGetToolInstaller@1
+  inputs:
+    versionSpec: '6.x'
 
 - task: PowerShell@2
   displayName: 'Enforce branch merge rules'
@@ -60,12 +67,14 @@ steps:
   displayName: 'Install Supporting PowerShell Modules'
   inputs:
     targetType: 'inline'
+    # Versions are pinned so a new Gallery release can't break CI unannounced.
+    # Bump deliberately after testing against a real import/export run.
     script: |
       # Import supporting PowerShell modules
       Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
-      Install-Module -Name Microsoft.Xrm.Data.Powershell -Force -Verbose -Scope CurrentUser
-      Install-Module -Name Microsoft.Xrm.Tooling.ConfigurationMigration -Force -Verbose -Scope CurrentUser
-      Install-Module -Name Microsoft.Xrm.DevOps.Data.PowerShell -Force -Verbose -Scope CurrentUser
+      Install-Module -Name Microsoft.Xrm.Data.Powershell -RequiredVersion 2.8.21 -Force -Verbose -Scope CurrentUser
+      Install-Module -Name Microsoft.Xrm.Tooling.ConfigurationMigration -RequiredVersion 1.0.0.88 -Force -Verbose -Scope CurrentUser
+      Install-Module -Name Microsoft.Xrm.DevOps.Data.PowerShell -RequiredVersion 1.4.2 -Force -Verbose -Scope CurrentUser
 
 - task: PowerShell@2
   displayName: 'Set Cds Solution Number to Build Version Number'
@@ -94,8 +103,9 @@ steps:
   displayName: 'Install PAC CLI'
   inputs:
     targetType: 'inline'
+    # Pinned to $(PacCliVersion) above so `pac solution pack` behavior can't change mid-project.
     script: |
-      dotnet tool install --global Microsoft.PowerApps.CLI.Tool
+      dotnet tool install --global Microsoft.PowerApps.CLI.Tool --version $(PacCliVersion)
       Write-Host "##vso[task.prependpath]$env:USERPROFILE\.dotnet\tools"
 
 - task: VSBuild@1
@@ -108,6 +118,40 @@ steps:
   inputs:
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
+
+- task: UseNode@1
+  displayName: 'Install Node.js'
+  inputs:
+    version: '$(NodeVersion)'
+
+- task: PowerShell@2
+  displayName: 'Build Code Apps'
+  inputs:
+    targetType: 'inline'
+    # Builds each CodeApps/<AppName> to catch breakage. Publishing (pa app push) is manual - see CodeApps/README.md.
+    script: |
+      $ErrorActionPreference = 'Stop'
+      $codeAppsRoot = Join-Path $env:BUILD_SOURCESDIRECTORY 'CodeApps'
+      $apps = @(Get-ChildItem $codeAppsRoot -Directory -ErrorAction SilentlyContinue |
+          Where-Object { Test-Path (Join-Path $_.FullName 'package.json') })
+
+      if ($apps.Count -eq 0) {
+          Write-Host "No code apps found — skipping."
+          exit 0
+      }
+
+      foreach ($app in $apps) {
+          Write-Host "Building code app '$($app.Name)'"
+          Push-Location $app.FullName
+          try {
+              npm ci
+              if ($LASTEXITCODE -ne 0) { throw "npm ci failed for '$($app.Name)'" }
+              npm run build
+              if ($LASTEXITCODE -ne 0) { throw "npm run build failed for '$($app.Name)'" }
+          } finally {
+              Pop-Location
+          }
+      }
 
 - task: NuGetCommand@2
   displayName: 'NuGet Pack Cds Dependency Artifact Package'

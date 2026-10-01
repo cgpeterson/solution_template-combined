@@ -19,6 +19,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Pipeline", "Pipeline", "{00
 		azure-pipelines.yml = azure-pipelines.yml
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CodeApps", "CodeApps", "{34E61FF6-9324-415A-A17D-BA4BFDBA4906}"
+	ProjectSection(SolutionItems) = preProject
+		CodeApps\README.md = CodeApps\README.md
+	EndProjectSection
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Plugins", "Plugins\Plugins.csproj", "{A9AEDD78-EDB8-4357-BCD7-F4888F1BE1B9}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebResources", "WebResources\WebResources.csproj", "{F22A919B-5D46-4732-8382-310D5E636B39}"

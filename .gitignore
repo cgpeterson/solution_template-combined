@@ -329,3 +329,13 @@ ASALocalRun/
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
 /DeploymentPackage/temp
+
+# Claude Code local secrets - copy .claude/settings.local.json.example instead
+.claude/settings.local.json
+.env
+
+# Code apps - per-app build output and local secrets
+CodeApps/**/node_modules/
+CodeApps/**/dist/
+CodeApps/**/.env
+CodeApps/**/.env.local

@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "azure-devops": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "azure-devops-mcp"],
+      "env": {
+        "AZURE_DEVOPS_URL": "https://dev.azure.com",
+        "AZURE_DEVOPS_COLLECTION": "replace-with-client-ado-org",
+        "AZURE_DEVOPS_PROJECT": "replace-with-client-ado-project"
+      }
+    },
+    "dataverse-dev": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "@microsoft/dataverse", "mcp", "%DATAVERSE_DEV_URL%"]
+    }
+  }
+}

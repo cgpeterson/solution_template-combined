@@ -1,0 +1,7 @@
+{
+  "env": {
+    "AZURE_DEVOPS_PAT": "",
+    "DATAVERSE_DEV_URL": ""
+  },
+  "enabledMcpjsonServers": ["azure-devops", "dataverse-dev"]
+}

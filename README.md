@@ -14,6 +14,7 @@ Plugins/                        # C# plugin assembly
 Shared.Proxies/                 # Shared project for proxies referenced by Plugins and WebResources
 WebResources/                   # TypeScript/JavaScript web resources
 Plugins.UnitTest/               # Unit test project
+CodeApps/                       # Power Apps code apps (one subfolder per app) - see CodeApps/README.md
 DeploymentPackage/              # Dataverse solution deployment package
   CdsSolution/                  # Unpacked solution XML
   DevOps/                       # Import/export scripts and tools
@@ -25,6 +26,9 @@ DeploymentPackage/              # Dataverse solution deployment package
   CdsArtifacts.nuspec           # Package manifest for the solution artifact package
 azure-pipelines.yml             # CI/CD pipeline
 NuGet.config                    # globalPackagesFolder setting (required for tool discovery)
+AGENTS.md                       # Instructions for AI coding agents (Claude Code, Codex, Copilot, etc.)
+.claude/                        # Claude Code permissions + settings.local.json.example
+.mcp.json                       # MCP servers (Azure DevOps, Dataverse) for AI agents
 ```
 
 ## Getting Started (New Project)
@@ -39,6 +43,11 @@ New projects are created automatically via `New-Project.ps1` in the `deployment_
 3. **Export the solution** (unmanaged) and commit `solution.xml` to the `dev` branch.
 4. **Update `ProjectFeedId`** in `azure-pipelines.yml` with the client project's ADO Artifacts feed ID (`{org-guid}/{feed-guid}`).
 5. **Update the agent pool** in `azure-pipelines.yml` if not using Microsoft-hosted agents.
+6. **Update `.mcp.json`** with the client's ADO organization/project, and copy `.claude/settings.local.json.example` to `.claude/settings.local.json` (gitignored) to supply local secrets.
+
+## Code Apps
+
+Power Apps code apps (standalone Vite/React SPAs) live under `CodeApps/<AppName>/`, one subfolder per app. See `CodeApps/README.md` for scaffolding, local dev, and publishing. Unlike web resources, code apps have no source-control-friendly XML/YAML representation to unpack from a solution. CI builds each app (`npm ci && npm run build`) to catch breakage, but publishing to an environment (`pa app push`) is still a manual step.
 
 ## Building Locally
 
@@ -93,3 +102,5 @@ When creating a new project manually (without `New-Project.ps1`), replace these 
 | `PluginAssemblyName` | Plugin assembly/namespace name |
 | `[publisherprefix]` | Dataverse publisher prefix |
 | `replace-with-your-org-guid/replace-with-your-feed-guid` | Client ADO Artifacts feed ID |
+| `replace-with-client-ado-org` | Client ADO organization/collection name (in `.mcp.json`) |
+| `replace-with-client-ado-project` | Client ADO project name (in `.mcp.json`) |

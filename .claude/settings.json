@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "WebSearch",
+      "Bash(msbuild*)",
+      "Bash(nuget.exe restore*)",
+      "Bash(vstest.console.exe*)",
+      "Bash(pac *)",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git branch*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(git checkout*)",
+      "Bash(git switch*)",
+      "Bash(git stash*)",
+      "Bash(ls *)",
+      "Bash(cd *)"
+    ],
+    "deny": [
+      "Bash(git push*)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean*)",
+      "Bash(rm -rf*)",
+      "Bash(*--force*)",
+      "Bash(*--no-verify*)",
+      "Bash(*password*)",
+      "Bash(*secret*)",
+      "Bash(*connectionstring*)",
+      "Bash(*token*)"
+    ]
+  }
+}

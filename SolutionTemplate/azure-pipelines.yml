@@ -3,8 +3,8 @@
 name: '$(Build.SourceBranchName)$(rev:.r)'
 
 trigger:
+- main
 - release/*
-- dev
 
 pool:
   vmImage: 'windows-latest'
@@ -17,7 +17,7 @@ variables:
   Version.Revision: '$(Build.SourceBranchName)'
   Version.Formatted: '$(Build.BuildNumber)'
   # Set this to the {org-guid}/{feed-guid} of this project's own ADO Artifacts feed
-  # (where the CDS dependency artifact package will be published on dev builds)
+  # (where the CDS dependency artifact package will be published on main builds)
   ProjectFeedId: 'replace-with-your-org-guid/replace-with-your-feed-guid'
   # Tool versions are pinned deliberately so a Microsoft.PowerApps.CLI.Tool, Node.js, or PowerShell
   # Gallery release can't silently break CI. Bump these on purpose, not by accident -
@@ -44,19 +44,16 @@ steps:
       $source = $env:SYSTEM_PULLREQUEST_SOURCEBRANCH -replace '^refs/heads/', ''
       Write-Host "PR: '$source' -> '$target'"
 
-      if ($target -eq 'dev') {
+      # main is the only long-lived branch. release/* is branched from main (not merged into),
+      # only takes hotfix/* PRs, and never merges back; hotfixes are cherry-picked to main separately.
+      if ($target -eq 'main') {
           if ($source -notlike 'feature/*' -and $source -notlike 'bugfix/*' -and $source -notlike 'issue/*' -and $source -notlike 'hotfix/*') {
-              Write-Host "##vso[task.logissue type=error]Only 'feature/*', 'bugfix/*', 'issue/*', or 'hotfix/*' branches may merge into 'dev'. Attempted: '$source' -> '$target'."
+              Write-Host "##vso[task.logissue type=error]Only 'feature/*', 'bugfix/*', 'issue/*', or 'hotfix/*' branches may merge into 'main'. Attempted: '$source' -> '$target'."
               exit 1
           }
       } elseif ($target -like 'release/*') {
-          if ($source -ne 'dev' -and $source -notlike 'hotfix/*') {
-              Write-Host "##vso[task.logissue type=error]Only 'dev' or 'hotfix/*' branches may merge into 'release/*'. Attempted: '$source' -> '$target'."
-              exit 1
-          }
-      } elseif ($target -eq 'main') {
-          if ($source -notlike 'release/*') {
-              Write-Host "##vso[task.logissue type=error]Only 'release/*' branches may merge into 'main'. Attempted: '$source' -> '$target'."
+          if ($source -notlike 'hotfix/*') {
+              Write-Host "##vso[task.logissue type=error]Only 'hotfix/*' branches may merge into 'release/*'. Attempted: '$source' -> '$target'."
               exit 1
           }
       }
@@ -155,7 +152,7 @@ steps:
 
 - task: NuGetCommand@2
   displayName: 'NuGet Pack Cds Dependency Artifact Package'
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/dev'))
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
   inputs:
     command: 'pack'
     packagesToPack: 'DeploymentPackage/CdsArtifacts.nuspec'
@@ -164,11 +161,11 @@ steps:
 
 - task: NuGetAuthenticate@1
   displayName: 'NuGet Authenticate'
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/dev'))
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
 
 - task: NuGetCommand@2
   displayName: 'NuGet Push Cds Dependency Artifact Package'
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/dev'))
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
   inputs:
     command: 'push'
     packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'

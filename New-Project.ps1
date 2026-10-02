@@ -12,15 +12,20 @@
     The optional ADO values stay as replace-with-* placeholders when omitted, and they are listed
     at the end as follow-ups.
 
+    -Destination may be a new folder, an empty folder, or a clone of an empty repository (only a
+    .git folder). The usual order is: create an empty repository on the git host, clone it, then run
+    this script into the clone and commit the result as the first commit.
+
     See docs\New-Project-Setup.md for the steps that come before and after running this script.
 
 .EXAMPLE
+    git clone https://github.com/contoso/contoso_claims.git C:\Repos\contoso_claims
     .\New-Project.ps1 -Destination C:\Repos\contoso_claims -SolutionName ContosoClaims `
         -PublisherPrefix cc -ClientPrefix Contoso -ClientName "Contoso Ltd"
 #>
 [CmdletBinding()]
 param (
-    # Folder to create. It must not exist yet, or must be empty.
+    # Folder to create, an empty folder, or a freshly cloned empty repository (only a .git folder).
     [Parameter(Mandatory)]
     [string]
     $Destination,
@@ -148,9 +153,16 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     throw 'git is required: New-Project.ps1 copies only the git-tracked files in SolutionTemplate\.'
 }
 
-if ((Test-Path $Destination) -and (Get-ChildItem $Destination -Force | Select-Object -First 1)) {
-    throw "Destination '$Destination' already exists and is not empty."
+$existingItems = @()
+if (Test-Path -LiteralPath $Destination) {
+    $existingItems = @(Get-ChildItem -LiteralPath $Destination -Force | Where-Object { $_.Name -ne '.git' })
 }
+if ($existingItems.Count -gt 0) {
+    $found = ($existingItems | Select-Object -First 10 | ForEach-Object { $_.Name }) -join ', '
+    throw ("Destination '$Destination' must be empty or contain only a .git folder (a freshly cloned empty repository). " +
+        "Found: $found. If the repository was created with a README, .gitignore or license, delete them first; the template provides its own.")
+}
+$isGitRepository = Test-Path -LiteralPath (Join-Path $Destination '.git')
 
 $pendingTemplateChanges = git -C $PSScriptRoot status --porcelain -- SolutionTemplate
 if ($pendingTemplateChanges) {
@@ -204,4 +216,17 @@ if ($leftovers) {
 }
 
 Write-Host ''
-Write-Host 'Next: follow docs\New-Project-Setup.md (git init, sandbox + empty solution, first export).'
+if ($isGitRepository) {
+    $originText = 'no origin remote'
+    if (@(git -C $destinationRoot remote) -contains 'origin') {
+        $originText = git -C $destinationRoot remote get-url origin
+    }
+    Write-Host "Next: in $destinationRoot ($originText), commit the template as the first commit on main and push it:"
+    Write-Host '  git add -A'
+    Write-Host "  git commit -m `"Create $SolutionName from solution template`""
+    Write-Host '  git push -u origin HEAD'
+    Write-Host 'Then continue with docs\New-Project-Setup.md (sandbox + empty solution, first export, branch protection).'
+}
+else {
+    Write-Host 'Next: follow docs\New-Project-Setup.md (git init, sandbox + empty solution, first export).'
+}

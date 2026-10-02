@@ -7,8 +7,8 @@ Per-project setup of the Power Platform environments a solution moves through, a
 | Environment | Type | Purpose |
 |---|---|---|
 | Developer sandboxes | Sandbox (or Developer) | One per developer. `Import.ps1`/`Export.ps1` target these. They can be reset freely. |
-| Integration / Test | Sandbox | Managed builds from `dev`, to check that changes deploy together cleanly |
-| UAT | Sandbox | Release candidates from `release/*`, for client acceptance |
+| Integration / Test | Sandbox | Managed builds from `main`, to check that changes deploy together cleanly |
+| UAT | Sandbox | Versioned builds from `release/*`, for client acceptance |
 | Production | Production | Managed releases only. Never customized directly. |
 
 Guidelines:

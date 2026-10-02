@@ -17,7 +17,10 @@ AGENTS.md              # Instructions for agents maintaining this repo
 
 ## Start a new project
 
+Create an empty repository on the git host, clone it, then run the script into the clone:
+
 ```powershell
+git clone https://github.com/<org>/contoso_claims.git C:\Repos\contoso_claims
 .\New-Project.ps1 -Destination C:\Repos\contoso_claims `
     -SolutionName ContosoClaims -PublisherPrefix cc -ClientPrefix Contoso -ClientName "Contoso Ltd"
 ```

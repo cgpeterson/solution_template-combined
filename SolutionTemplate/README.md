@@ -42,7 +42,7 @@ After `New-Project.ps1` creates the repo, complete these one-time steps. `docs/N
    - Unique name: matches the `SolutionName` you passed to `New-Project.ps1`
    - Publisher: with the prefix matching `PublisherPrefix`
    - Version: `0.0.0.1`
-3. **Export the solution** (unmanaged) and commit `solution.xml` to the `dev` branch.
+3. **Export the solution** (unmanaged) and commit `solution.xml` to `main`.
 4. **Update `ProjectFeedId`** in `azure-pipelines.yml` with the client project's ADO Artifacts feed ID (`{org-guid}/{feed-guid}`).
 5. **Update the agent pool** in `azure-pipelines.yml` if not using Microsoft-hosted agents.
 6. **Update `.mcp.json`** with the client's ADO organization/project, and copy `.claude/settings.local.json.example` to `.claude/settings.local.json` (gitignored) to supply local secrets.
@@ -81,18 +81,19 @@ JMCL framework packages are consumed from the public **nuget.org** feed — no p
 
 ## Branch Strategy
 
+`main` is the only long-lived branch. Releases are governed by `release/*` branches cut from it.
+
 ```
 feature/*  \
-bugfix/*    +-->  dev  -->  release/*  -->  main
-issue/*    /                    ^
-hotfix/*  ----------------------+
+bugfix/*    +--PR-->  main  --(branch)-->  release/1.2  <--PR--  hotfix/*
+issue/*    /           ^                                            |
+                       +------------PR (cherry-pick)----------------+
 ```
 
-| Branch | Merges into | Notes |
-|---|---|---|
-| `feature/*`, `bugfix/*`, `issue/*` | `dev` | Normal development work |
-| `hotfix/*` | `release/*` (then back-ported to `dev`) | Urgent fixes |
-| `dev` | `release/*` | Release candidates |
-| `release/*` | `main` | After deployment sign-off |
+| Branch | Created from | Merges into | Notes |
+|---|---|---|---|
+| `feature/*`, `bugfix/*`, `issue/*` | `main` | `main` | Normal development work |
+| `release/*` (e.g. `release/1.2`) | `main` | — never merged back | Cut from `main` when a release is ready. Its builds are versioned (`1.2.<rev>`) and deployed through test, UAT and production. |
+| `hotfix/*` | `release/*` | `release/*`, then cherry-picked to `main` | Fixes to a release in flight. Every hotfix also reaches `main` through its own PR, so the next release includes it. |
 
-All PRs require a passing CI build. The CI pipeline enforces source branch rules on every PR merge build — invalid source→target combinations fail the build immediately.
+All PRs require a passing CI build. The CI pipeline enforces these rules on every PR merge build: only `feature/*`, `bugfix/*`, `issue/*` and `hotfix/*` may merge into `main`, and only `hotfix/*` into `release/*`. Invalid combinations fail the build immediately.

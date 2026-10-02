@@ -4,11 +4,11 @@ How day-to-day work moves between your Dataverse sandbox and the repo. It assume
 
 ## The loop
 
-1. Branch from `dev` (`feature/*`, `bugfix/*`, or `issue/*`).
+1. Branch from `main` (`feature/*`, `bugfix/*`, or `issue/*`). To fix a release in flight, branch `hotfix/*` from that `release/*` branch instead (see the branch strategy in the project's `README.md`).
 2. `Import.ps1`: put the branch's solution into your sandbox.
 3. Make changes, either in the maker portal or in code (plugins, web resources, code apps).
 4. `Export.ps1`: pull the sandbox changes back into `DeploymentPackage\CdsSolution\`.
-5. Commit the code and the exported XML together, then open a PR to `dev`.
+5. Commit the code and the exported XML together, then open a PR to `main` (or, for a hotfix, to the `release/*` branch, plus a cherry-pick PR to `main`).
 
 The exported XML in `CdsSolution\` is the source of truth for what ships. Anything pushed to the sandbox some other way (spkl, `pac`, the maker portal) only reaches other environments once it has been exported and committed.
 

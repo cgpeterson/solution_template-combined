@@ -108,7 +108,7 @@ The template ships an **Azure Pipelines** definition (`azure-pipelines.yml`). It
 |---|---|---|
 | `[solutionname]` | Solution unique name | `SolutionSettings.ps1`, both `spkl.json` files, `PackageTemplate.cs`, `CdsArtifacts.nuspec`, `README.md`, `AGENTS.md` |
 | `PluginAssemblyName` | Plugin assembly/namespace name | `Plugins.csproj`, `Plugins.UnitTest` sources and `.csproj`, `solution.mappings.xml`, `AGENTS.md` |
-| `[publisherprefix]` | Publisher prefix | `AGENTS.md` |
+| `[publisherprefix]` | Publisher prefix | `AGENTS.md`, `docs/Plugin-Development.md`, `Plugins/PluginBase.cs` (telemetry environment variable name) |
 | `[clientprefix]` | Client prefix | `CdsArtifacts.nuspec` |
 | `[clientname]` | Client name (XML-escaped) | `CdsArtifacts.nuspec` |
 | `replace-with-your-org-guid/replace-with-your-feed-guid` | ADO Artifacts feed ID | `azure-pipelines.yml` |

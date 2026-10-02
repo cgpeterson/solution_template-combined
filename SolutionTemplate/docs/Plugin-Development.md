@@ -444,7 +444,8 @@ return records;
 
 `PluginBase` derives from JMCL's `InstrumentedCDSPlugin`. For every execution it records an Application Insights **request**, with its duration, success, message, table and correlation ID. It also records handler exceptions: validation errors as code 400, anything else as a failure. Telemetry from `context.Trace(...)` and from `context.CreateWebRequest(...)` calls (as dependencies) goes to the same place.
 
-- **To turn it on**, create a Dataverse environment variable named `Telemetry.InstrumentationKey` (schema or display name) and set it to the Application Insights instrumentation key for that environment. Give each environment its own value, so dev, test and production telemetry stay separate.
+- **To turn it on**, add an environment variable with schema name `[publisherprefix]_TelemetryKey` (type Text) to this solution, and set its value in each environment to that environment's Application Insights instrumentation key. The name is `PluginBase.TelemetryKeyVariableName`. It's specific to this solution, so several solutions in one environment can report to separate Application Insights resources. Give each environment its own value, so dev, test and production telemetry stay separate.
+- Add the definition **without a default value** and set the value per environment, as a current value or through the deployment settings. A default would be exported with the solution and carried into every environment.
 - **With no key**, telemetry is disabled and plugins run normally. Projects that don't use Application Insights need no setup.
 - Telemetry is sent to Application Insights' **commercial** ingestion endpoint by instrumentation key. Sovereign clouds (GCC and other US Government tenants) use different endpoints, so confirm telemetry arrives before relying on it there.
 - Never put personal data, tokens or full record contents in traces. Everything traced is also sent to Application Insights.

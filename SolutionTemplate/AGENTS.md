@@ -82,7 +82,7 @@ When creating or proposing tables, columns or relationships:
 
 **Read `docs/Plugin-Development.md` before writing or changing a plugin.** It has worked examples of every pattern below: validation, derived fields, related-record updates, Custom APIs, view filters, external calls, caching, configuration and tests.
 
-All plugin classes inherit from `PluginBase` (`Plugins/PluginBase.cs`), which derives from JMCL's `InstrumentedCDSPlugin` and adds Application Insights telemetry (turned on per environment with the `Telemetry.InstrumentationKey` environment variable; a no-op without it) plus one shared IoC container and cache. Never derive directly from `CDSPlugin`. The constructor registers **typed** handlers, and the framework dispatches to them. Don't switch on `context.MessageName`.
+All plugin classes inherit from `PluginBase` (`Plugins/PluginBase.cs`), which derives from JMCL's `InstrumentedCDSPlugin` and adds Application Insights telemetry (turned on per environment with this solution's `[publisherprefix]_TelemetryKey` environment variable; a no-op without it) plus one shared IoC container and cache. Never derive directly from `CDSPlugin`. The constructor registers **typed** handlers, and the framework dispatches to them. Don't switch on `context.MessageName`.
 
 ```csharp
 [CrmPluginRegistration(MessageNameEnum.Update, AbcCase.EntityLogicalName, StageEnum.PreOperation,

@@ -5,11 +5,18 @@ namespace PluginAssemblyName
 
     /// <summary>
     /// Base class for every plugin in this assembly. Adds Application Insights telemetry
-    /// (enabled by the Telemetry.InstrumentationKey environment variable; a no-op without it)
-    /// and shares one IoC container, and so one cache, across all plugin classes.
+    /// (enabled by this solution's TelemetryKeyVariableName environment variable; a no-op
+    /// without it) and shares one IoC container, and so one cache, across all plugin classes.
     /// </summary>
     public abstract class PluginBase : InstrumentedCDSPlugin
     {
+        /// <summary>
+        /// Schema name of the environment variable holding this solution's Application Insights
+        /// instrumentation key. Solution-specific so solutions sharing an environment can report
+        /// to separate Application Insights resources.
+        /// </summary>
+        public const string TelemetryKeyVariableName = "[publisherprefix]_TelemetryKey";
+
         private static IIocContainer _container;
         private static readonly object _containerLock = new object();
 
@@ -32,6 +39,9 @@ namespace PluginAssemblyName
         }
 
         protected PluginBase(string unsecureConfig, string secureConfig)
-            : base(unsecureConfig, secureConfig) { }
+            : base(unsecureConfig, secureConfig)
+        {
+            InstrumentationVariableName = TelemetryKeyVariableName;
+        }
     }
 }

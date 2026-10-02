@@ -43,9 +43,12 @@
     <PackageReference Include="JMCL.Dataverse.ProxyBuilder" Version="1.0.2" />
     <PackageReference Include="JMCL.Core.IocContainer.Sources" Version="1.0.2" />
     <PackageReference Include="JMCL.Core.Net.Sources" Version="1.0.2" />
+    <PackageReference Include="JMCL.Core.Net.Instrumented.Sources" Version="1.0.2" />
     <PackageReference Include="JMCL.Core.ProcessModel.Sources" Version="1.0.2" />
     <PackageReference Include="JMCL.Dataverse.Data.Sources" Version="1.0.2" />
     <PackageReference Include="JMCL.Dataverse.Sdk.Sources" Version="1.0.2" />
+    <PackageReference Include="JMCL.Dataverse.Sdk.Instrumented.Sources" Version="1.0.2" />
+    <PackageReference Include="JMCL.Telemetry.Sources" Version="1.0.2" />
     <PackageReference Include="Microsoft.CrmSdk.CoreAssemblies" Version="9.0.2.60" />
     <PackageReference Include="Microsoft.CrmSdk.CoreTools" Version="9.1.0.217" />
     <PackageReference Include="spkl" Version="1.0.640" />
@@ -71,6 +74,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CrmPluginRegistrationAttribute.cs" />
+    <Compile Include="PluginBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

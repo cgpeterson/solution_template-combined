@@ -70,6 +70,9 @@ JMCL framework packages are consumed from the public **nuget.org** feed — no p
 | Package | Purpose |
 |---|---|
 | `JMCL.Dataverse.Sdk.Sources` | Core plugin base classes |
+| `JMCL.Dataverse.Sdk.Instrumented.Sources` | `InstrumentedCDSPlugin`, the base of `Plugins\PluginBase.cs` (Application Insights telemetry) |
+| `JMCL.Telemetry.Sources` | Sandbox-safe Application Insights client |
+| `JMCL.Core.Net.Instrumented.Sources` | Web requests with dependency telemetry |
 | `JMCL.Dataverse.Data.Sources` | Fluent query builder and data extensions |
 | `JMCL.Core.IocContainer.Sources` | IoC container |
 | `JMCL.Core.Net.Sources` | HTTP web request utilities |

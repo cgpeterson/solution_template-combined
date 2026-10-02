@@ -1,6 +1,6 @@
 # Plugin Development
 
-How to write, register and test plugins in this repo, using the JMCL `CDSPlugin` framework. The patterns come from production plugins; the examples use an illustrative `abc` publisher prefix (`abc_case` → proxy class `AbcCase`). Substitute this project's prefix and tables.
+How to write, register and test plugins in this repo, using the JMCL `CDSPlugin` framework through this assembly's `PluginBase`. The patterns come from production plugins; the examples use an illustrative `abc` publisher prefix (`abc_case` → proxy class `AbcCase`). Substitute this project's prefix and tables.
 
 Read the **Do Not** and **Code Standards** sections of `AGENTS.md` first. This guide assumes them.
 
@@ -12,7 +12,7 @@ Read the **Do Not** and **Code Standards** sections of `AGENTS.md` first. This g
 4. [Reading the record: target, images and PreMergedTarget](#reading-the-record)
 5. [Patterns](#patterns)
 6. [Querying with the fluent API](#querying-with-the-fluent-api)
-7. [Configuration, caching and secrets](#configuration-caching-and-secrets)
+7. [Configuration, caching, telemetry and secrets](#configuration-caching-telemetry-and-secrets)
 8. [Testing](#testing)
 9. [Checklist: adding a plugin](#checklist-adding-a-plugin)
 
@@ -38,7 +38,7 @@ namespace PluginAssemblyName
         Image1Type = ImageTypeEnum.PreImage,
         Image1Name = "PreImage",
         Image1Attributes = AbcCase.Fields.AbcClosedOn)]
-    public class SetCaseClosedOnPlugin : CDSPlugin
+    public class SetCaseClosedOnPlugin : PluginBase
     {
         public SetCaseClosedOnPlugin(string unsecureConfig, string secureConfig)
             : base(unsecureConfig, secureConfig)
@@ -73,6 +73,7 @@ namespace PluginAssemblyName
 
 The conventions it shows:
 
+- **Inherit from `PluginBase`** (`Plugins/PluginBase.cs`), never directly from `CDSPlugin`. `PluginBase` adds Application Insights telemetry and shares one IoC container, and so one cache, across every plugin in the assembly.
 - **One class per business rule**, named for what it does (`SetCaseClosedOnPlugin`), in `Plugins/`. Custom API classes end in `Api`.
 - **Handlers are `private static`.** Plugin instances are cached and shared across threads, so a handler must never touch instance fields. Pass everything it needs as arguments.
 - **Typed registration** (`RegisterUpdateHandler<AbcCase>`): the framework converts the target to the proxy type and only dispatches matching messages. Don't switch on `context.MessageName`.
@@ -133,7 +134,7 @@ Steps are declared with `[CrmPluginRegistration(...)]` on the class, one attribu
     IsolationModeEnum.Sandbox, Id = "...", Image1Type = ImageTypeEnum.PreImage, Image1Name = "PreImage",
     Image1Attributes = AbcPerson.Fields.AbcFirstName + "," + AbcPerson.Fields.AbcLastName)]
 // ...one pair per table...
-public class SetRecordName : CDSPlugin
+public class SetRecordName : PluginBase
 {
     public SetRecordName(string unsecureConfig, string secureConfig) : base(unsecureConfig, secureConfig)
     {
@@ -173,7 +174,7 @@ To tell "not in the request" apart from "being cleared", check `target.Contains(
 Throw `InvalidPluginExecutionException` with a message written for the end user. It's the only exception type whose message reaches the user. Put the rule in a `public static` method so it can be unit tested without a pipeline.
 
 ```csharp
-public class ValidateCaseReferencePlugin : CDSPlugin
+public class ValidateCaseReferencePlugin : PluginBase
 {
     public ValidateCaseReferencePlugin(string unsecureConfig, string secureConfig) : base(unsecureConfig, secureConfig)
     {
@@ -277,7 +278,7 @@ Keep the API class thin: validate the inputs, call a helper, and map the results
 
 ```csharp
 [CrmPluginRegistration(AbcCloseCaseRequest.SchemaName)]
-public class CloseCaseApi : CDSPlugin
+public class CloseCaseApi : PluginBase
 {
     public CloseCaseApi(string unsecureConfig, string secureConfig) : base(unsecureConfig, secureConfig)
     {
@@ -390,7 +391,7 @@ var requirements = context.OrganizationService
 - Use `.Is<T>(ConditionOperator.X, value)` for operators without a helper method (`BeginsWith`, `Like`, `In`, and so on).
 - To read a single record by ID, use `Retrieve` with an explicit `ColumnSet`, never `ColumnSet(true)`.
 
-## Configuration, caching and secrets
+## Configuration, caching, telemetry and secrets
 
 ### Settings
 
@@ -437,7 +438,17 @@ return records;
 - Key by class, purpose and input, and cache plain `Entity` collections.
 - Never cache user-specific or security-filtered results under a key that doesn't include the user.
 
-By default each plugin class has its own container, and so its own cache. To share one cache across every plugin in the assembly, add a `PluginBase : CDSPlugin` that overrides `Container` with a single static, lazily created `IocContainer`, and have plugins inherit from `PluginBase`.
+`PluginBase` shares one IoC container across every plugin class in the assembly, so all plugins share the same cache. A plugin deriving directly from `CDSPlugin` would get its own container and cache.
+
+### Telemetry
+
+`PluginBase` derives from JMCL's `InstrumentedCDSPlugin`. For every execution it records an Application Insights **request**, with its duration, success, message, table and correlation ID. It also records handler exceptions: validation errors as code 400, anything else as a failure. Telemetry from `context.Trace(...)` and from `context.CreateWebRequest(...)` calls (as dependencies) goes to the same place.
+
+- **To turn it on**, add an environment variable with schema name `[publisherprefix]_TelemetryKey` (type Text) to this solution, and set its value in each environment to that environment's Application Insights instrumentation key. The name is `PluginBase.TelemetryKeyVariableName`. It's specific to this solution, so several solutions in one environment can report to separate Application Insights resources. Give each environment its own value, so dev, test and production telemetry stay separate.
+- Add the definition **without a default value** and set the value per environment, as a current value or through the deployment settings. A default would be exported with the solution and carried into every environment.
+- **With no key**, telemetry is disabled and plugins run normally. Projects that don't use Application Insights need no setup.
+- Telemetry is sent to Application Insights' **commercial** ingestion endpoint by instrumentation key. Sovereign clouds (GCC and other US Government tenants) use different endpoints, so confirm telemetry arrives before relying on it there.
+- Never put personal data, tokens or full record contents in traces. Everything traced is also sent to Application Insights.
 
 ### Secrets
 
@@ -450,6 +461,12 @@ Never put secrets in code, in plugin step **unsecure** configuration, or in a pl
 ## Testing
 
 `Plugins.UnitTest` uses MSTest with DLaB XrmUnitTest's in-memory Dataverse (`UseLocalCrmDatabase=true` in `UnitTestSettings.config`), so plugins run end to end with no environment.
+
+### Before the first test run
+
+- **Generate the proxies first** (`Plugins\codgen\proxybuilder.bat`). The in-memory service needs early-bound types for `businessunit` and `systemuser`. Plugin settings, which `PluginBase` reads on every execution, need `environmentvariabledefinition` and `environmentvariablevalue`. All of these are in the default `entitiesToInclude` in `Plugins\proxies.json`, so keep them there.
+- The in-memory service finds proxy types through `Shared.Proxies\CrmServiceContext.cs`, which is compiled into the plugin assembly. Tests therefore use exactly the proxy types the plugins use.
+- Run the tests from Visual Studio's Test Explorer, or with `vstest.console.exe Plugins.UnitTest\bin\<Configuration>\PluginAssemblyName.UnitTest.dll /InIsolation`. Without `/InIsolation`, XrmUnitTest tries to write settings into `vstest.console.exe.config` under Program Files and fails.
 
 ### Structure
 
@@ -558,7 +575,7 @@ Then assert by retrieving from `service` after `Execute`.
 
 1. Check the implementation choice: is a plugin the right tool? (See *Choosing an Implementation* in `AGENTS.md`.)
 2. Make sure every table and column you use is in `Plugins\proxies.json`, and regenerate the proxies if not. Custom APIs go in `actionsToInclude`.
-3. Create `Plugins\<Name>Plugin.cs` (or `<Name>Api.cs`) and any `Plugins\Helpers\<Name>Helper.cs`, and **add each new file to `Plugins.csproj`** (`<Compile Include="..." />`). The project file lists files explicitly.
+3. Create `Plugins\<Name>Plugin.cs` (or `<Name>Api.cs`) deriving from `PluginBase` and any `Plugins\Helpers\<Name>Helper.cs`, and **add each new file to `Plugins.csproj`** (`<Compile Include="..." />`). The project file lists files explicitly.
 4. Add `[CrmPluginRegistration]` attributes, with new GUIDs, filtering attributes and only the image columns you need.
 5. Write tests in `Plugins.UnitTest\Tests\<Name>Tests.cs`, plus builders as needed. Add these files to `Plugins.UnitTest.csproj` too.
 6. Build and run the tests.

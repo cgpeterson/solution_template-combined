@@ -25,7 +25,7 @@ The `.csproj` files are legacy (non-SDK) format — **use `nuget.exe restore`, N
 msbuild "[solutionname].sln" /p:Configuration=Release /p:Platform="Any CPU"
 
 # Run tests (MSTest)
-vstest.console.exe Plugins.UnitTest/bin/Release/PluginAssemblyName.UnitTest.dll
+vstest.console.exe Plugins.UnitTest/bin/Release/PluginAssemblyName.UnitTest.dll /InIsolation
 ```
 
 JMCL `.Sources` packages deliver their source files into the Plugins project via NuGet `contentFiles` — there is no manual copy step and no generated folder to commit.
@@ -54,6 +54,8 @@ JMCL `.Sources` packages deliver their source files into the Plugins project via
 
 Early-bound proxies are generated into `Shared.Proxies/` (namespace `Shared.Proxies`) by `Plugins\codgen\proxybuilder.bat` (`JMCL.Dataverse.ProxyBuilder`), driven by `Plugins/proxies.json` and `Plugins/ProxyTemplate.t4`. Add entities to `entitiesToInclude` in `proxies.json` and regenerate — do not hand-edit generated proxies.
 
+Generated files land in `Shared.Proxies/Entities`, `GlobalEnums` and `Messages`. `Shared.Proxies.projitems` compiles those folders with wildcards, and `Plugins.csproj` imports it, so **don't add proxy `Compile` items to `Plugins.csproj`** or import `Shared.Proxies` into the test project (duplicate types). Keep `businessunit`, `systemuser`, `team`, `environmentvariabledefinition` and `environmentvariablevalue` in `entitiesToInclude`: the unit test framework and plugin settings need them.
+
 - Entity logical names use the publisher prefix: `[publisherprefix]_case`
 - Entity proxy classes use a pascal-cased version of the prefix: e.g. prefix `abc` → proxy class `AbcCase`
 - Fields use the prefix on the proxy: `AbcCase.Fields.AbcCaseNumber`
@@ -76,18 +78,18 @@ When creating or proposing tables, columns or relationships:
 - Simple synchronous no-code logic on a data change: a classic real-time **workflow**.
 - If none of these fit, question whether the automation is needed before building something else.
 
-## Plugin Pattern (JMCL `CDSPlugin`)
+## Plugin Pattern (`PluginBase` / JMCL `CDSPlugin`)
 
 **Read `docs/Plugin-Development.md` before writing or changing a plugin.** It has worked examples of every pattern below: validation, derived fields, related-record updates, Custom APIs, view filters, external calls, caching, configuration and tests.
 
-All plugin classes inherit from `CDSPlugin` (`JMCL.Dataverse.Sdk`). The constructor registers **typed** handlers, and the framework dispatches to them. Don't switch on `context.MessageName`.
+All plugin classes inherit from `PluginBase` (`Plugins/PluginBase.cs`), which derives from JMCL's `InstrumentedCDSPlugin` and adds Application Insights telemetry (turned on per environment with the `Telemetry.InstrumentationKey` environment variable; a no-op without it) plus one shared IoC container and cache. Never derive directly from `CDSPlugin`. The constructor registers **typed** handlers, and the framework dispatches to them. Don't switch on `context.MessageName`.
 
 ```csharp
 [CrmPluginRegistration(MessageNameEnum.Update, AbcCase.EntityLogicalName, StageEnum.PreOperation,
     ExecutionModeEnum.Synchronous, AbcCase.Fields.Statuscode, "SetCaseClosedOnPlugin: PreOperation Update abc_case",
     1000, IsolationModeEnum.Sandbox, Id = "<new GUID>",
     Image1Type = ImageTypeEnum.PreImage, Image1Name = "PreImage", Image1Attributes = AbcCase.Fields.AbcClosedOn)]
-public class SetCaseClosedOnPlugin : CDSPlugin
+public class SetCaseClosedOnPlugin : PluginBase
 {
     public SetCaseClosedOnPlugin(string unsecureConfig, string secureConfig) : base(unsecureConfig, secureConfig)
     {

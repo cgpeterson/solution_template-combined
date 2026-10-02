@@ -4,7 +4,7 @@
   or whitespace. In addition to actual entity logical names, you can specify regex expressions such as ^new_\\S*$ to include entities with 
   logical names that match the regex expression. You can also specify a wildcard (*). Defaults to no entities.
   */
-  "entitiesToInclude": "businessunit, systemuser, team",
+  "entitiesToInclude": "businessunit, systemuser, team, environmentvariabledefinition, environmentvariablevalue",
 
   /*
   actionsToInclude - an optional list of Sdk message names to include in the proxy generation. Wildcards and regex are not supported for

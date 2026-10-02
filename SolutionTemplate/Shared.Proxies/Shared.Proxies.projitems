@@ -14,6 +14,7 @@
     would silently stop compiling any proxy added after the last manual edit.
   -->
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)CrmServiceContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Entities\*.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GlobalEnums\*.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Messages\*.cs" />

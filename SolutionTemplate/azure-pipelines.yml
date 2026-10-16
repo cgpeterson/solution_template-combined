@@ -4,7 +4,7 @@ name: '$(Build.SourceBranchName)$(rev:.r)'
 
 trigger:
 - release/*
-- dev
+- main
 
 pool:
   vmImage: 'windows-latest'
@@ -16,8 +16,10 @@ variables:
   CRM_SDK_PATH: 'C:/hostedtoolcache/windows\CdsDevTools\Tools'
   Version.Revision: '$(Build.SourceBranchName)'
   Version.Formatted: '$(Build.BuildNumber)'
+  utcdate: ''
+  solutionversion: ''
   # Set this to the {org-guid}/{feed-guid} of this project's own ADO Artifacts feed
-  # (where the CDS dependency artifact package will be published on dev builds)
+  # (where the CDS dependency artifact package will be published on main builds)
   ProjectFeedId: 'replace-with-your-org-guid/replace-with-your-feed-guid'
   # Tool versions are pinned deliberately so a Microsoft.PowerApps.CLI.Tool, Node.js, or PowerShell
   # Gallery release can't silently break CI. Bump these on purpose, not by accident -
@@ -44,14 +46,14 @@ steps:
       $source = $env:SYSTEM_PULLREQUEST_SOURCEBRANCH -replace '^refs/heads/', ''
       Write-Host "PR: '$source' -> '$target'"
 
-      if ($target -eq 'dev') {
+      if ($target -eq 'main') {
           if ($source -notlike 'feature/*' -and $source -notlike 'bugfix/*' -and $source -notlike 'issue/*' -and $source -notlike 'hotfix/*') {
-              Write-Host "##vso[task.logissue type=error]Only 'feature/*', 'bugfix/*', 'issue/*', or 'hotfix/*' branches may merge into 'dev'. Attempted: '$source' -> '$target'."
+              Write-Host "##vso[task.logissue type=error]Only 'feature/*', 'bugfix/*', 'issue/*', or 'hotfix/*' branches may merge into 'main'. Attempted: '$source' -> '$target'."
               exit 1
           }
       } elseif ($target -like 'release/*') {
-          if ($source -ne 'dev' -and $source -notlike 'hotfix/*') {
-              Write-Host "##vso[task.logissue type=error]Only 'dev' or 'hotfix/*' branches may merge into 'release/*'. Attempted: '$source' -> '$target'."
+          if ($source -ne 'main' -and $source -notlike 'hotfix/*') {
+              Write-Host "##vso[task.logissue type=error]Only 'main' or 'hotfix/*' branches may merge into 'release/*'. Attempted: '$source' -> '$target'."
               exit 1
           }
       } elseif ($target -eq 'main') {
@@ -75,6 +77,29 @@ steps:
       Install-Module -Name Microsoft.Xrm.Data.Powershell -RequiredVersion 2.8.21 -Force -Verbose -Scope CurrentUser
       Install-Module -Name Microsoft.Xrm.Tooling.ConfigurationMigration -RequiredVersion 1.0.0.88 -Force -Verbose -Scope CurrentUser
       Install-Module -Name Microsoft.Xrm.DevOps.Data.PowerShell -RequiredVersion 1.4.2 -Force -Verbose -Scope CurrentUser
+
+- task: PowerShell@2
+  displayName: 'Get solution version number'
+  condition: succeeded()
+  inputs:
+    targetType: 'inline'
+    script: |
+      $fileName = $Env:BUILD_SOURCESDIRECTORY + '\DeploymentPackage\CdsSolution\Other\Solution.xml'
+      [xml] $xdoc = get-content $fileName
+      $date = $(Get-Date([datetime]::UtcNow) -UFormat "0.%Y.%m%d.%H%M")
+      $version = $xdoc.ImportExportXml.SolutionManifest.Version
+      $(Build.BuildId) | Out-File $(Build.ArtifactStagingDirectory)\buildId.txt
+      Write-Host "##vso[task.setvariable variable=solutionversion]$version"
+      Write-Host "##vso[task.setvariable variable=utcdate]$date"
+
+- task: PowerShell@2
+  displayName: 'Validate Solution Version Number'
+  condition: and(succeeded(), ge(variables['solutionversion'], variables['utcdate']))
+  inputs:
+    targetType: 'inline'
+    script: |
+      Write-Host "##vso[task.logissue type=error;]Solution Version Number is Higher than UTC Time version"
+      exit 1
 
 - task: PowerShell@2
   displayName: 'Set Cds Solution Number to Build Version Number'
@@ -155,20 +180,20 @@ steps:
 
 - task: NuGetCommand@2
   displayName: 'NuGet Pack Cds Dependency Artifact Package'
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/dev'))
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
   inputs:
     command: 'pack'
     packagesToPack: 'DeploymentPackage/CdsArtifacts.nuspec'
     versioningScheme: 'byEnvVar'
-    versionEnvVar: 'Version.Formatted'
+    versionEnvVar: 'solutionversion'
 
 - task: NuGetAuthenticate@1
   displayName: 'NuGet Authenticate'
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/dev'))
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
 
 - task: NuGetCommand@2
   displayName: 'NuGet Push Cds Dependency Artifact Package'
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/dev'))
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
   inputs:
     command: 'push'
     packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'

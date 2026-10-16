@@ -38,14 +38,14 @@ The DevOps scripts follow the structure Adoxio created for ADX portal developmen
 
 ## Pipeline
 
-`azure-pipelines.yml` (Azure Pipelines) runs on `dev` and `release/*`:
+`azure-pipelines.yml` (Azure Pipelines) runs on `main` and `release/*`:
 
-1. Enforces the allowed PR source → target branches.
+1. Enforces the allowed PR source → target branches: `feature/*`, `bugfix/*`, `issue/*` and `hotfix/*` into `main`; only `hotfix/*` into `release/*`.
 2. Installs pinned tool versions: PAC CLI, PowerShell modules, NuGet, Node.js.
 3. On `release/*`, stamps the build number into `solution.xml`.
 4. Restores, then builds in Release, which produces the managed deployment package, and runs the unit tests.
 5. Builds every code app.
-6. On `dev`, packs and publishes the dependency artifact package.
+6. On `main`, packs and publishes the dependency artifact package.
 7. Publishes `temp\packed` and `temp\deployment` as build artifacts.
 
 Build numbers follow the branch name, so `release/1.2` builds as `1.2.<rev>`.

@@ -12,9 +12,14 @@ How to create a new client solution repo from `SolutionTemplate/`. This is one-t
 | Client name | Display name used as the artifact package owner | `Contoso Ltd` |
 | Plugin assembly name | Assembly name and root namespace (defaults to `<SolutionName>.Plugins`) | `ContosoClaims.Plugins` |
 
-## 2. Run New-Project.ps1
+## 2. Create the repository and run New-Project.ps1
 
-From the root of this repo:
+1. Create an **empty** repository on the client's git host. Don't add a README, `.gitignore` or license; the template provides its own, and the script refuses a folder containing anything except `.git`.
+2. Clone it locally:
+   ```powershell
+   git clone https://github.com/<org>/contoso_claims.git C:\Repos\contoso_claims
+   ```
+3. From the root of this repo, run the script into the clone:
 
 ```powershell
 .\New-Project.ps1 -Destination C:\Repos\contoso_claims `
@@ -31,6 +36,8 @@ Optional parameters:
 | `-PluginAssemblyName` | Plugin assembly/namespace (default `<SolutionName>.Plugins`) |
 | `-ProjectFeedId` | `ProjectFeedId` in `azure-pipelines.yml` (`{org-guid}/{feed-guid}`), only when using Azure DevOps Artifacts |
 | `-AdoOrganization`, `-AdoProject` | The `azure-devops` MCP server in `.mcp.json`, only when the project is hosted in Azure DevOps |
+
+`-Destination` can also be a new or empty folder if you'd rather run `git init` yourself (see step 4).
 
 The script:
 
@@ -49,48 +56,50 @@ The script:
    - Publisher: the publisher from the previous step
    - Version: `0.0.0.1`
 
-## 4. Initialize the repo and do the first export
+## 4. Make the first commit and do the first export
+
+In the clone, commit the template as the repository's first commit on `main` and push it. The script prints these commands with the right solution name:
 
 ```powershell
 cd C:\Repos\contoso_claims
-git init -b main
-git add .
+git add -A
 git commit -m "Create ContosoClaims from solution template"
-git switch -c dev
+git push -u origin HEAD
 ```
 
-Then, after [Developer Machine Setup](Developer-Machine-Setup.md), export the empty solution and commit it to `dev`:
+If you ran the script into a plain folder instead of a clone, start with `git init -b main` and `git remote add origin <url>`, then run the commands above.
+
+Then, after [Developer Machine Setup](Developer-Machine-Setup.md), export the empty solution and commit it to `main`:
 
 ```powershell
 cd DeploymentPackage\DevOps
 .\Export.ps1
 ```
 
-Commit the new `DeploymentPackage\CdsSolution\` folder, including `Other\solution.xml`.
+Commit the new `DeploymentPackage\CdsSolution\` folder, including `Other\solution.xml`. Push these first commits before turning on branch protection (step 5). If protection is already on, commit on a `feature/*` branch and open a PR instead.
 
-## 5. Host the repo and protect the branches
+## 5. Protect the branches
 
-Push `main` and `dev` to the client's git host and make `dev` the default branch. The branch strategy is described in the generated repo's `README.md`:
+`main` is the only long-lived branch and should be the default branch on the git host. Releases are cut from it as `release/*` branches, which take only `hotfix/*` fixes and never merge back. The full strategy is in the generated repo's `README.md`:
 
 ```
-feature/*, bugfix/*, issue/*  ->  dev  ->  release/*  ->  main
-hotfix/*  ->  release/*  (then back-ported to dev)
+feature/*, bugfix/*, issue/*  ->  main  ->(branch)->  release/*  <-  hotfix/*
+hotfix/*  ->  main  (cherry-picked, so the next release includes the fix)
 ```
 
 Configure branch protection with your host's own features (GitHub rulesets, Azure DevOps branch policies, and so on). Recommended settings:
 
 | Branch | Recommended protection |
 |---|---|
-| `dev` | Pull request required, at least one reviewer from the development team, passing CI build, linked work item if your tracker supports it |
-| `release/*` | Pull request required, reviewers from the technical lead or client approver group, passing CI build |
-| `main` | Pull request required (from `release/*` or `hotfix/*` only), passing CI build |
-| All | Block direct pushes and force pushes |
+| `main` | Pull request required, at least one reviewer from the development team, passing CI build, linked work item if your tracker supports it |
+| `release/*` | Pull request required (from `hotfix/*` only), reviewers from the technical lead or client approver group, passing CI build |
+| All | Block direct pushes and force pushes. Restrict who can create `release/*` branches if your host supports it. |
 
 The included `azure-pipelines.yml` also enforces the allowed source → target branch combinations on PR merge builds. On another CI system, carry that check across or rely on branch protection rules.
 
 ## 6. Set up CI
 
-The template ships an **Azure Pipelines** definition (`azure-pipelines.yml`). It builds, runs tests, builds code apps, packs the deployment package, and publishes a dependency artifact package from `dev`.
+The template ships an **Azure Pipelines** definition (`azure-pipelines.yml`). It builds, runs tests, builds code apps, packs the deployment package, and publishes a dependency artifact package from `main`.
 
 - **Azure DevOps:** register the pipeline from `azure-pipelines.yml`. Set `ProjectFeedId` to the project's Artifacts feed if the project publishes a dependency artifact package. Change the agent pool if you aren't using Microsoft-hosted agents.
 - **Other hosts:** use `azure-pipelines.yml` as the reference for the steps an equivalent pipeline needs.

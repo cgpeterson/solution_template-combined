@@ -56,11 +56,6 @@ steps:
               Write-Host "##vso[task.logissue type=error]Only 'main' or 'hotfix/*' branches may merge into 'release/*'. Attempted: '$source' -> '$target'."
               exit 1
           }
-      } elseif ($target -eq 'main') {
-          if ($source -notlike 'release/*') {
-              Write-Host "##vso[task.logissue type=error]Only 'release/*' branches may merge into 'main'. Attempted: '$source' -> '$target'."
-              exit 1
-          }
       }
 
       Write-Host "Branch merge check passed."

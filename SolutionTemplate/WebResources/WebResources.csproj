@@ -71,7 +71,6 @@
     <Content Include="ClientHooks\out\clienthooks.js" />
     <Content Include="ClientUI\out\clientui.js" />
     <Content Include="Common\out\common.js" />
-    <Content Include="gulpfile.js" />
     <Content Include="package.json" />
   </ItemGroup>
   <ItemGroup>

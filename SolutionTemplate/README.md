@@ -23,6 +23,7 @@ DeploymentPackage/              # Dataverse solution deployment package
   CdsArtifacts.nuspec           # Package manifest for the solution artifact package
 azure-pipelines.yml             # CI/CD pipeline
 NuGet.config                    # globalPackagesFolder setting (required for tool discovery)
+THIRD-PARTY-NOTICES.md          # MIT notice for the template code this repo started from
 AGENTS.md                       # Instructions for AI coding agents (Claude Code, Codex, Copilot, etc.)
 docs/
   Plugin-Development.md         # Plugin patterns, registration, and testing guide

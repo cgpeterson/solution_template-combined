@@ -1,0 +1,26 @@
+JMCL Dataverse Solution Template
+Copyright (c) 2026 Jeff Maughan and Cody G. Peterson
+
+Licensed under the MIT License. See LICENSE.
+
+The deployment scripts under SolutionTemplate/DeploymentPackage/DevOps/ come
+from the deployment template (JMCL.Dataverse.DeploymentTemplate.Sources),
+which is derived from the CDS Deployment Template by Scott Colson
+(Colson Code, LLC) and used under the MIT License.
+
+Third-party components:
+
+  Adoxio.Dynamics.DevOps (SolutionTemplate/DeploymentPackage/DevOps/Tools/)
+    Used under the MIT License:
+
+      Copyright (c) 2018 KPMG Adoxio Business Solutions Ltd.
+
+    Its original repository (github.com/Adoxio/Adoxio.Dynamics.DevOps) is no
+    longer online. The module was published under the MIT License, and its
+    PowerShell Gallery manifest links to that license.
+
+  NuGet and npm packages restore at build time under their own licenses and
+  are not stored in this repository.
+
+The permission and warranty text for each MIT notice above is the same as
+the MIT License in LICENSE.

@@ -13,7 +13,6 @@ variables:
   solution: '**/**.sln'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
-  CRM_SDK_PATH: 'C:/hostedtoolcache/windows\CdsDevTools\Tools'
   Version.Revision: '$(Build.SourceBranchName)'
   Version.Formatted: '$(Build.BuildNumber)'
   utcdate: ''
@@ -24,7 +23,8 @@ variables:
   # Tool versions are pinned deliberately so a Microsoft.PowerApps.CLI.Tool, Node.js, or PowerShell
   # Gallery release can't silently break CI. Bump these on purpose, not by accident -
   # check https://www.nuget.org/packages/Microsoft.PowerApps.CLI.Tool for newer PAC CLI releases.
-  PacCliVersion: '2.9.3'
+  # Keep in step with $pacVersion in DeploymentPackage/DevOps/Install_PowerShell_Dependencies.ps1
+  PacCliVersion: '2.14.1'
   NodeVersion: '22.x'
 
 steps:
@@ -61,19 +61,6 @@ steps:
       Write-Host "Branch merge check passed."
 
 - task: PowerShell@2
-  displayName: 'Install Supporting PowerShell Modules'
-  inputs:
-    targetType: 'inline'
-    # Versions are pinned so a new Gallery release can't break CI unannounced.
-    # Bump deliberately after testing against a real import/export run.
-    script: |
-      # Import supporting PowerShell modules
-      Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
-      Install-Module -Name Microsoft.Xrm.Data.Powershell -RequiredVersion 2.8.21 -Force -Verbose -Scope CurrentUser
-      Install-Module -Name Microsoft.Xrm.Tooling.ConfigurationMigration -RequiredVersion 1.0.0.88 -Force -Verbose -Scope CurrentUser
-      Install-Module -Name Microsoft.Xrm.DevOps.Data.PowerShell -RequiredVersion 1.4.2 -Force -Verbose -Scope CurrentUser
-
-- task: PowerShell@2
   displayName: 'Get solution version number'
   condition: succeeded()
   inputs:
@@ -81,8 +68,9 @@ steps:
     script: |
       $fileName = $Env:BUILD_SOURCESDIRECTORY + '\DeploymentPackage\CdsSolution\Other\Solution.xml'
       [xml] $xdoc = get-content $fileName
-      $date = $(Get-Date([datetime]::UtcNow) -UFormat "0.%Y.%m%d.%H%M")
       $version = $xdoc.ImportExportXml.SolutionManifest.Version
+      # Same major as the solution, matching Export.ps1's version stamp
+      $date = "$(([version]$version).Major)." + $(Get-Date([datetime]::UtcNow) -UFormat "%Y.%m%d.%H%M")
       $(Build.BuildId) | Out-File $(Build.ArtifactStagingDirectory)\buildId.txt
       Write-Host "##vso[task.setvariable variable=solutionversion]$version"
       Write-Host "##vso[task.setvariable variable=utcdate]$date"

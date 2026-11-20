@@ -22,7 +22,7 @@
 $global:ErrorActionPreference = "Stop"
 $Env:CRM_SDK_PATH = "$PSScriptRoot\Tools"
 
-# Adoxio.Dynamics.DevOps is kept only for Expand-CrmSolution / Expand-CrmData (local, no connection).
+# Adoxio.Dynamics.DevOps is kept only for Expand-CrmData (local, no connection).
 Import-Module "$env:CRM_SDK_PATH\Adoxio.Dynamics.DevOps\Adoxio.Dynamics.DevOps.psd1" -Force
 
 $ConnectionParameters = switch ($ConnectionName) {
@@ -68,8 +68,15 @@ if ($settings.ExportSolutions -and ('All' -in $Actions -or 'Solutions' -in $Acti
 }
 
 if ($settings.ExtractSolutions -and ('All' -in $Actions -or 'Solutions' -in $Actions -or 'Expand-CrmSolutions' -in $Actions)) {
-    $settings.ExtractSolutions | Expand-CrmSolution
-    if ($LASTEXITCODE -ne 0) { throw "Expand-CrmSolution (SolutionPackager.exe) failed (exit $LASTEXITCODE)" }
+    foreach ($extract in $settings.ExtractSolutions) {
+        # pac can exit 0 on a failed unpack, so check the zips before clearing the folder and the output after.
+        $managedZipFile = $extract.ZipFile -replace '\.zip$', '_managed.zip'
+        if (-not (Test-Path -Path $extract.ZipFile) -or ($extract.PackageType -eq 'Both' -and -not (Test-Path -Path $managedZipFile))) { throw "Solution zip not found for '$($extract.ZipFile)' -- export the solution before expanding it" }
+        # Unpack into an empty folder so components removed from the environment don't linger in the repo.
+        Remove-Item -Path $extract.Folder -Force -Recurse -ErrorAction SilentlyContinue
+        pac solution unpack -z $extract.ZipFile -f $extract.Folder -p $extract.PackageType -m $extract.MappingXmlFile -e Verbose
+        if ($LASTEXITCODE -ne 0 -or -not (Test-Path -Path "$($extract.Folder)\Other\Solution.xml")) { throw "pac solution unpack failed for '$($extract.ZipFile)' (exit $LASTEXITCODE)" }
+    }
     Set-SolutionVersionNumber -CdsSolutionFolder $cdsSolutionFolder
     & "$PSScriptRoot\Doctoring\Remove-KeysFromMissingDependencies.ps1" -SolutionFolderPath "$(Split-Path $PSScriptRoot)\CdsSolution"
     & "$PSScriptRoot\Doctoring\Sort-SolutionXmlFolder.ps1" -Path "$(Split-Path $PSScriptRoot)\CdsSolution\other"
@@ -129,7 +136,7 @@ if ('PortalPages' -in $Actions) {
         $config   = Import-PowerShellDataFile $configPath
         $zeroGuid = '00000000-0000-0000-0000-000000000000'
 
-        foreach ($field in @('TenantId', 'SiteWebsiteId', 'MsalPublicClientId')) {
+        foreach ($field in @('TenantId', 'SiteWebsiteId')) {
             if ($config.$field -eq $zeroGuid) {
                 throw "PortalToolkit.Config.psd1: '$field' is still a placeholder (all-zero GUID). Replace it with the real value before running."
             }

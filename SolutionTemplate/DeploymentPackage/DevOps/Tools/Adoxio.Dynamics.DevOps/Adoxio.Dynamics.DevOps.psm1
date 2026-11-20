@@ -1,142 +1,5 @@
 ﻿Set-StrictMode -Version Latest
 
-function GetSolutionPackagerFolder {
-    if(Test-Path "$env:CRM_SDK_PATH\CoreTools\SolutionPackager.exe") { # CRM 9.x SDK
-        return "$env:CRM_SDK_PATH\CoreTools"
-    } else {
-        throw "SolutionPackager.exe could not be found. Verify the CRM_SDK_PATH environment variable has been set to the 'SDK' folder for CRM 8.x SDK, or the 'Tools' folder for CRM 9.x SDK."
-    }
-}
-
-#function GetPackageDeployerFolder {
-#   if(Test-Path "$env:CRM_SDK_PATH\PackageDeployer.exe") { # CRM 9.x SDK
-#        return "$env:CRM_SDK_PATH\PackageDeployment"
-#    } else {
-#        throw "PackageDeployer.exe could not be found. Verify the CRM_SDK_PATH environment variable has been set to the 'SDK' folder for CRM 8.x SDK, or the 'Tools' folder for CRM 9.x SDK."
-#    }
-#}
-
-<#
-.Synopsis
-   Packages an unpacked CRM solution folder using the SolutionPackager tool.
-.DESCRIPTION
-   This function packs an unpacked CRM solution folder and its individual components using the SolutionPackager tool included in the Dynamics 365 SDK. The SolutionPackager documentation is located online at https://msdn.microsoft.com/en-us/library/jj602987.aspx.
-.EXAMPLE
-   Compress-CrmSolution -Folder 'C:\temp\solutions\AdventureWorks' -ZipFile 'C:\temp\packed\AdventureWorks.zip' -PackageType Unmanaged
-
-   This example packs the AdventureWorks unmananged solution to a zip file.
-.EXAMPLE
-   Compress-CrmSolution -Folder 'C:\temp\solutions\AdventureWorks' -MappingXmlFile 'C:\temp\solutions\AdventureWorks.mapping.xml' -ZipFile 'C:\temp\packed\AdventureWorks.zip' -PackageType Unmanaged
-
-   This example packs the AdventureWorks unmanaged solution to a zip file and uses an XML mapping file as used by the /map parameter of the SolutionPackager tool.
-.EXAMPLE
-   Compress-CrmSolution -Folder 'C:\temp\solutions\AdventureWorks' -ZipFile 'C:\temp\export\AdventureWorks.zip' -PackageType Managed
-
-   This example packs the AdventureWorks managed solution to a zip file using the SolutionPackager tool. The managed version of solution must exist in the same folder as the unmanaged solution and end with the name _managed.zip (e.g. AdventureWorks_managed.zip).
-#>
-function Compress-CrmSolution {
-    [CmdletBinding()]
-    param (
-        # The folder path to an unpacked solution. See the /folder parameter of the SolutionPackager tool.
-        [Parameter(Mandatory, ValueFromPipelineByPropertyName=$true)]
-        [ValidateNotNullOrEmpty()]
-        [string]$Folder,
-
-        # The path and name of an .xml file containing file mapping directives. See the /map parameter of the SolutionPackager tool.
-        [Parameter(ValueFromPipelineByPropertyName=$true)]
-        [ValidateNotNullOrEmpty()]
-        [string]$MappingXmlFile,
-
-        # The package type to process. See the /packagetype parameter of the SolutionPackager tool.
-        [Parameter(Mandatory, ValueFromPipelineByPropertyName=$true)]
-        [ValidateSet("Unmanaged","Managed")]
-        [string]$PackageType,
-
-        # The target solution zip file to create. See the /zipfile parameter of the SolutionPackager tool.
-        [Parameter(Mandatory, ValueFromPipelineByPropertyName=$true)]
-        [ValidateNotNullOrEmpty()]
-        [string]$ZipFile
-    )
-    process
-    {
-        $solutionPackagerArgs = "/nologo",
-                                "/action:Pack",
-                                "/folder:$Folder",
-                                "/packagetype:$PackageType",
-                                "/zipfile:$ZipFile"
-
-        if($MappingXmlFile) {
-            $solutionPackagerArgs += "/map:$MappingXmlFile"
-        }
-
-        # extract the solutions
-        & "$(GetSolutionPackagerFolder)\SolutionPackager.exe" $solutionPackagerArgs
-    }
-}
-
-<#
-.Synopsis
-   Extracts a CRM solution zip file using the SolutionPackager tool.
-.DESCRIPTION
-   This function extracts a CRM solution file to its individual components using the SolutionPackager tool included in the Dynamics 365 SDK. The SolutionPackager documentation is located online at https://msdn.microsoft.com/en-us/library/jj602987.aspx.
-.EXAMPLE
-   Expand-CrmSolution -ZipFile 'C:\temp\export\AdventureWorks.zip' -PackageType Unmanaged -Folder 'C:\temp\solutions\AdventureWorks'
-
-   This example extracts the AdventureWorks solution to a folder.
-.EXAMPLE
-   Expand-CrmSolution -ZipFile 'C:\temp\export\AdventureWorks.zip' -MappingXmlFile 'C:\temp\solutions\AdventureWorks.mapping.xml' -PackageType Unmanaged -Folder 'C:\temp\solutions\AdventureWorks'
-
-   This example extracts the AdventureWorks solution to a folder and uses an XML mapping file as used by the /map parameter of the SolutionPackager tool.
-.EXAMPLE
-   Expand-CrmSolution -ZipFile 'C:\temp\export\AdventureWorks.zip' -PackageType Both -Folder 'C:\temp\solutions\AdventureWorks'
-
-   This example extracts the unmanaged and managed versions of the AdventureWorks solution to a folder using the SolutionPackager tool. The managed version of solution must exist in the same folder as the unmanaged solution and end with the name _managed.zip (e.g. AdventureWorks_managed.zip).
-#>
-function Expand-CrmSolution {
-    param (
-        # The source solution zip file to extract. See the /zipfile parameter of the SolutionPackager tool.
-        [Parameter(Mandatory, ValueFromPipelineByPropertyName=$true)]
-        [ValidateNotNullOrEmpty()]
-        [string]$ZipFile,
-
-        # The path and name of an .xml file containing file mapping directives. See the /map parameter of the SolutionPackager tool.
-        [Parameter(ValueFromPipelineByPropertyName=$true)]
-        [ValidateNotNullOrEmpty()]
-        [string]$MappingXmlFile,
-
-        # The package type to process. See the /packagetype parameter of the SolutionPackager tool.
-        [Parameter(Mandatory, ValueFromPipelineByPropertyName=$true)]
-        [ValidateSet("Unmanaged","Managed","Both")]
-        [string]$PackageType,
-
-        # The folder path to store the extracted solution file. See the /folder parameter of the SolutionPackager tool.
-        [Parameter(Mandatory, ValueFromPipelineByPropertyName=$true)]
-        [ValidateNotNullOrEmpty()]
-        [string]$Folder
-    )
-    process
-    {
-        # remove the existing extracted solution folder before creating it
-        Remove-Item -Path $Folder -Force -Recurse -ErrorAction SilentlyContinue
-
-        # sleep for 1 second to avoid the solution packager error "Access to the path '<path-to-folder>' is denied".
-        Start-Sleep -Seconds 1
-
-        $solutionPackagerArgs = "/nologo",
-                                "/action:Extract",
-                                "/zipfile:$ZipFile",
-                                "/packagetype:$PackageType",
-                                "/folder:$Folder"
-
-        if($MappingXmlFile) {
-            $solutionPackagerArgs += "/map:$MappingXmlFile"
-        }
-
-        # extract the solutions
-        & "$(GetSolutionPackagerFolder)\SolutionPackager.exe" $solutionPackagerArgs
-    }
-}
-
 <#
 .Synopsis
    Packs and zips a folder of Configuration Migration tool generated files previously created from the Expand-CrmData cmdlet.
@@ -577,8 +440,8 @@ function New-CrmPackage {
         [switch]
         $ImportData = $true,
 
-        # The file path of the assembly (.dll) containing the package definition. Do not supply a value to use the default behavior of using Adoxio.Dynamics.ImportPackage.dll included in this module.
-        [Parameter(ValueFromPipelineByPropertyName=$true)]
+        # The file path of the assembly (.dll) containing the package definition. DefaultSettings.ps1 points this at the DeploymentPackage build output.
+        [Parameter(Mandatory, ValueFromPipelineByPropertyName=$true)]
         [ValidateNotNullOrEmpty()]
         [string]
         $PackageDllFile,
@@ -596,11 +459,6 @@ function New-CrmPackage {
     )
     process
     {
-        if(-not $PackageDllFile) {
-            # use Adoxio.Dynamics.ImportPackage.dll included in the module if one hasn't been supplied
-            $PackageDllFile = Join-Path -Path $PSScriptRoot -ChildPath Adoxio.Dynamics.ImportPackage.dll
-        }
-
         # create the package folder if it doesn't already exist
         New-Item -ItemType Directory -Path $PackageFolder -Force | Out-Null
 

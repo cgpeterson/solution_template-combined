@@ -13,13 +13,16 @@ $environmentUrl = "https://$orgName.crm.dynamics.com"
 
 @{
     # Used by Export.ps1 / Import.ps1 for everything that connects to the environment, all
-    # signed in with MSAL: pac for solutions, data and -ResetEnvironment, MSAL.PS for
+    # signed in with MSAL: pac for solutions, data and -ResetEnvironment, Az.Accounts for
     # Import-DocumentTemplates. No password is stored or prompted for here. First run opens an
     # interactive browser sign-in and the token is cached after that.
     PacConnectionParameter = @{
         EnvironmentUrl = $environmentUrl
-        # Optional: pin Import-DocumentTemplates' sign-in to one tenant (id or domain).
-        # TenantId = "[mytenant].onmicrosoft.com"
+        # Optional: pin Import-DocumentTemplates' sign-in to one tenant id.
+        # TenantId = "00000000-0000-0000-0000-000000000000"
+
+        # Lets Import.ps1 load TestData here. Only set this for dev and test environments, never Prod.
+        AllowTestData = $true
     }
 
     # Only EnvironmentUrl is per-developer here. Cloud, ProfileName, TenantId and the site

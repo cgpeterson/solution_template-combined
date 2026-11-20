@@ -43,8 +43,9 @@ Write-Host("Running Import.ps1")
 $Env:CRM_SDK_PATH = "$PSScriptRoot\Tools"
 # Adoxio.Dynamics.DevOps stays for Compress-CrmData / New-CrmPackage (local, no connection).
 # Everything that connects to an environment authenticates with MSAL: pac for solutions, data and
-# environment reset; MSAL.PS for Import-DocumentTemplates.ps1.
+# environment reset; Az.Accounts for Import-DocumentTemplates.ps1.
 Import-Module "$env:CRM_SDK_PATH\Adoxio.Dynamics.DevOps\Adoxio.Dynamics.DevOps.psd1" -Force
+. "$PSScriptRoot\Merge-CrmDataZip.ps1"
 
 $ConnectionParameters = switch ($ConnectionName) {
 	"MySandbox" {& "C:\\CrmConnection\MyCdsSandboxConnection.ps1"}
@@ -52,6 +53,16 @@ $ConnectionParameters = switch ($ConnectionName) {
 }
 
 $settings = & "$PSScriptRoot\Settings\$ImportSettings.ps1" -ConnectionParameters $ConnectionParameters -PackageType $PackageType
+
+# Test data only goes to environments whose connection file opts in, so it can't land in Prod.
+$allowTestData = $ConnectionParameters.PacConnectionParameter.AllowTestData -eq $true
+if (('TestData' -in $Actions -or 'Merge-TestData' -in $Actions) -and -not $allowTestData) {
+    throw "Connection '$ConnectionName' doesn't allow test data. Set PacConnectionParameter.AllowTestData = `$true in its connection file if this environment should get it."
+}
+
+# Per-environment connection references and environment variables, made with
+# pac solution create-settings and named after the connection, e.g. DeploymentSettings\MyTest.json.
+$deploymentSettingsFile = "$(Split-Path $PSScriptRoot)\DeploymentSettings\$ConnectionName.json"
 
 
 # If directed, configured, and solution data exists then  compress the solution into a zip file.
@@ -67,7 +78,7 @@ if($settings.ExtractedSolutions `
 # Compress configuration data into a zip file
 if($settings.ExtractedConfigData `
     -and $settings.ExtractedConfigData.Exists `
-    -and ("All" -in $Actions -or "ConfigData" -in $Actions -or 'Compress-ConfigData' -in $Actions)) {
+    -and ("All" -in $Actions -or "New-CrmPackage" -in $Actions -or "ConfigData" -in $Actions -or 'Compress-ConfigData' -in $Actions -or 'Merge-ConfigData' -in $Actions)) {
         Write-Host("Compressing configuration data")
         $settings.ExtractedConfigData | Compress-CrmData -Verbose
 }
@@ -75,9 +86,30 @@ if($settings.ExtractedConfigData `
 # Compress test data into a zip file
 if($settings.ExtractedTestData `
     -and $settings.ExtractedTestData.Exists `
-    -and ("All" -in $Actions -or "TestData" -in $Actions -or 'Compress-TestData' -in $Actions)) {
+    -and ("All" -in $Actions -or "TestData" -in $Actions -or 'Compress-TestData' -in $Actions -or 'Merge-TestData' -in $Actions)) {
         Write-Host("Compressing Test Data")
         $settings.ExtractedTestData | Compress-CrmData
+}
+
+# Package Deployer imports one data file, so merge the dependencies' config data and the project's
+# own into CrmPackageDefinition.DataZipFile. Test data joins it only when the connection allows it.
+$mergeTestData = $allowTestData -and ("All" -in $Actions -or "TestData" -in $Actions -or 'Merge-TestData' -in $Actions)
+if($settings.CrmPackageDefinition `
+    -and ($mergeTestData -or "All" -in $Actions -or "New-CrmPackage" -in $Actions -or "ConfigData" -in $Actions -or 'Merge-ConfigData' -in $Actions)) {
+    $packageDataZips = @($settings.ExtractedConfigData.DependencyDataFiles)
+    if ($settings.ExtractedConfigData.Exists) { $packageDataZips += $settings.ExtractedConfigData.ZipFile }
+    if ($mergeTestData) {
+        $packageDataZips += @($settings.ExtractedTestData.DependencyDataFiles)
+        if ($settings.ExtractedTestData.Exists) { $packageDataZips += $settings.ExtractedTestData.ZipFile }
+    }
+    $packageDataZips = @($packageDataZips | Where-Object { $_ -and (Test-Path -Path $_) })
+
+    $packageDataZip = $settings.CrmPackageDefinition[0].DataZipFile
+    Remove-Item -Path $packageDataZip -Force -ErrorAction SilentlyContinue
+    if ($packageDataZips.Count -gt 0) {
+        Write-Host("Merging package data into $packageDataZip")
+        Merge-CrmDataZip -ZipFiles $packageDataZips -OutputZip $packageDataZip
+    }
 }
 
 if($settings.ResetEnvironmentDefinition -and ("All" -in $Actions -or 'Invoke-ImportCrmPackage' -in $Actions -or 'Solutions' -in $Actions -or 'ConfigData' -in $Actions -or 'TestData' -in $Actions) -and $ResetEnvironment) {
@@ -165,8 +197,13 @@ if ("All" -in $Actions -or 'Solutions' -in $Actions -or 'ConfigData' -in $Action
 
     if ("All" -in $Actions -or 'Solutions' -in $Actions -or 'Invoke-ImportCrmPackage' -in $Actions) {
         foreach ($solutionZip in ($settings.CrmPackageDefinition.SolutionZipFiles | Where-Object { $_ -and (Test-Path -Path $_) })) {
-            Write-Host "pac solution import: $solutionZip"
-            pac solution import --path $solutionZip --publish-changes --async
+            $importArgs = @('solution', 'import', '--path', $solutionZip, '--publish-changes', '--async')
+            # The settings file holds this project's connection references and variables, so it only applies to its own solution.
+            if ($solutionZip -eq $settings.ExtractedSolutions[0].ZipFile -and (Test-Path -Path $deploymentSettingsFile)) {
+                $importArgs += @('--settings-file', $deploymentSettingsFile)
+            }
+            Write-Host "pac $($importArgs -join ' ')"
+            pac @importArgs
             if ($LASTEXITCODE -ne 0) { throw "pac solution import failed for '$solutionZip' (exit $LASTEXITCODE)" }
         }
     }
@@ -176,7 +213,7 @@ if ("All" -in $Actions -or 'Solutions' -in $Actions -or 'ConfigData' -in $Action
         $dataZipsToImport += $settings.ExtractedConfigData.DependencyDataFiles
         if ($settings.ExtractedConfigData.Exists) { $dataZipsToImport += $settings.ExtractedConfigData.ZipFile }
     }
-    if ("All" -in $Actions -or 'TestData' -in $Actions -or 'Invoke-ImportCrmPackage' -in $Actions) {
+    if ($allowTestData -and ("All" -in $Actions -or 'TestData' -in $Actions -or 'Invoke-ImportCrmPackage' -in $Actions)) {
         $dataZipsToImport += $settings.ExtractedTestData.DependencyDataFiles
         if ($settings.ExtractedTestData.Exists) { $dataZipsToImport += $settings.ExtractedTestData.ZipFile }
     }

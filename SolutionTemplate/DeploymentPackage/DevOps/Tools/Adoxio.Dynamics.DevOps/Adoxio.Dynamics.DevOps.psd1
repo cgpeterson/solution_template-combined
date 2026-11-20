@@ -33,8 +33,8 @@ CLRVersion = '4.0'
 # Processor architecture (None, X86, Amd64) required by this module
 ProcessorArchitecture = 'None'
 
-# No RequiredModules. The functions Import.ps1, Export.ps1 and post-build.ps1 use (Compress-/Expand-CrmSolution,
-# Compress-/Expand-CrmData, New-CrmPackage) are local file operations. The ADAL-based connection functions
+# No RequiredModules. The functions Import.ps1, Export.ps1 and post-build.ps1 use (Compress-/Expand-CrmData,
+# New-CrmPackage) are local file operations. The ADAL-based connection functions
 # (Export-CrmSolutions, Invoke-ExportCrmSolution, Export-CrmData, Invoke-ImportCrmPackage, Test-CrmOrganization)
 # were removed; pac (MSAL) does that work now. Two optional functions still need a module imported first if used:
 # Edit-CrmSchemaFile (Microsoft.Xrm.Tooling.ConfigurationMigration) and Restore-CrmOrganization (on-premises).

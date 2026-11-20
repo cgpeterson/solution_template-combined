@@ -213,24 +213,16 @@
     <None Include="DevOps\Doctoring\Sort-XmlFiles.ps1" />
     <None Include="DevOps\Doctoring\UpdateSolutionVersion.ps1" />
     <None Include="DevOps\Export.ps1" />
+    <None Include="DevOps\Get-DataverseAccessToken.ps1" />
     <None Include="DevOps\Import-DocumentTemplates.ps1" />
     <None Include="DevOps\Import.ps1" />
     <None Include="DevOps\Install_PowerShell_Dependencies.ps1" />
-    <None Include="DevOps\Install_SDK_Tools.ps1" />
+    <None Include="DevOps\Merge-CrmDataZip.ps1" />
     <None Include="DevOps\post-build.ps1" />
     <None Include="DevOps\Settings\DefaultSettings.ps1" />
     <None Include="DevOps\Stage-PortalChange.ps1" />
     <None Include="DevOps\Tools\Adoxio.Dynamics.DevOps\Adoxio.Dynamics.DevOps.psd1" />
     <None Include="DevOps\Tools\Adoxio.Dynamics.DevOps\Adoxio.Dynamics.DevOps.psm1" />
-    <None Include="DevOps\Tools\ConfigurationMigration\DataMigrationUtility.exe.config" />
-    <None Include="DevOps\Tools\ConfigurationMigration\LicenseTerms.docx" />
-    <None Include="DevOps\Tools\ConfigurationMigration\Third Party Notices for Dynamics 365 SDK.docx" />
-    <None Include="DevOps\Tools\CoreTools\CrmSvcUtil.exe.config" />
-    <None Include="DevOps\Tools\CoreTools\LicenseTerms.docx" />
-    <None Include="DevOps\Tools\CoreTools\pacTelemetryUpload.exe.config" />
-    <None Include="DevOps\Tools\CoreTools\SolutionPackager.exe.config" />
-    <None Include="DevOps\Tools\MyCdsSandboxConnection.ps1" />
-    <None Include="DevOps\Tools\PackageDeployment.PowerShell\RegisterXRMPackageDeployment.ps1" />
     <None Include="DevOps\Upload-StagedPortalChanges.ps1" />
     <None Include="packages.config" />
     <None Include="SolutionSettings.ps1" />
@@ -239,42 +231,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="DevOps\Tools\Adoxio.Dynamics.DevOps\Adoxio.Dynamics.ImportPackage.dll" />
-    <Content Include="DevOps\Tools\ConfigurationMigration\DataMigrationUtility.exe" />
-    <Content Include="DevOps\Tools\ConfigurationMigration\Microsoft.Crm.Sdk.Proxy.dll" />
-    <Content Include="DevOps\Tools\ConfigurationMigration\Microsoft.IdentityModel.Clients.ActiveDirectory.dll" />
-    <Content Include="DevOps\Tools\ConfigurationMigration\Microsoft.Rest.ClientRuntime.dll" />
-    <Content Include="DevOps\Tools\ConfigurationMigration\Microsoft.VisualBasic.dll" />
-    <Content Include="DevOps\Tools\ConfigurationMigration\Microsoft.Xrm.Sdk.Deployment.dll" />
-    <Content Include="DevOps\Tools\ConfigurationMigration\Microsoft.Xrm.Sdk.dll" />
-    <Content Include="DevOps\Tools\ConfigurationMigration\Microsoft.Xrm.Tooling.Connector.dll" />
-    <Content Include="DevOps\Tools\ConfigurationMigration\Microsoft.Xrm.Tooling.CrmConnectControl.dll" />
-    <Content Include="DevOps\Tools\ConfigurationMigration\Microsoft.Xrm.Tooling.Dmt.DataMigCommon.dll" />
-    <Content Include="DevOps\Tools\ConfigurationMigration\Microsoft.Xrm.Tooling.Dmt.ExportProcessor.dll" />
-    <Content Include="DevOps\Tools\ConfigurationMigration\Microsoft.Xrm.Tooling.Dmt.ImportProcessor.dll" />
-    <Content Include="DevOps\Tools\ConfigurationMigration\Microsoft.Xrm.Tooling.Dmt.MetadataHandler.dll" />
-    <Content Include="DevOps\Tools\ConfigurationMigration\Microsoft.Xrm.Tooling.Ui.Styles.dll" />
-    <Content Include="DevOps\Tools\ConfigurationMigration\Newtonsoft.Json.dll" />
-    <Content Include="DevOps\Tools\ConfigurationMigration\Other Redistributable.txt" />
-    <Content Include="DevOps\Tools\CoreTools\CrmSvcUtil.exe" />
-    <Content Include="DevOps\Tools\CoreTools\CrmSvcUtil.xml" />
-    <Content Include="DevOps\Tools\CoreTools\Microsoft.ApplicationInsights.dll" />
-    <Content Include="DevOps\Tools\CoreTools\Microsoft.Crm.Sdk.Proxy.dll" />
-    <Content Include="DevOps\Tools\CoreTools\Microsoft.IdentityModel.Clients.ActiveDirectory.dll" />
-    <Content Include="DevOps\Tools\CoreTools\Microsoft.PowerPlatform.Tooling.BatchedTelemetry.dll" />
-    <Content Include="DevOps\Tools\CoreTools\Microsoft.Rest.ClientRuntime.dll" />
-    <Content Include="DevOps\Tools\CoreTools\Microsoft.Xrm.Sdk.Deployment.dll" />
-    <Content Include="DevOps\Tools\CoreTools\Microsoft.Xrm.Sdk.dll" />
-    <Content Include="DevOps\Tools\CoreTools\Microsoft.Xrm.Tooling.Connector.dll" />
-    <Content Include="DevOps\Tools\CoreTools\Microsoft.Xrm.Tooling.CrmConnectControl.dll" />
-    <Content Include="DevOps\Tools\CoreTools\Microsoft.Xrm.Tooling.Ui.Styles.dll" />
-    <Content Include="DevOps\Tools\CoreTools\Newtonsoft.Json.dll" />
-    <Content Include="DevOps\Tools\CoreTools\Other Redistributable.txt" />
-    <Content Include="DevOps\Tools\CoreTools\pacTelemetryUpload.exe" />
-    <Content Include="DevOps\Tools\CoreTools\SolutionPackager.exe" />
-    <Content Include="DevOps\Tools\CoreTools\SolutionPackagerLib.dll" />
-    <Content Include="DevOps\Tools\CoreTools\System.Diagnostics.DiagnosticSource.dll" />
-    <Content Include="DevOps\Tools\CoreTools\System.ValueTuple.dll" />
     <Content Include="solution.mappings.xml">
       <SubType>Designer</SubType>
     </Content>

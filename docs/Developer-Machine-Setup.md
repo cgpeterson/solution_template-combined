@@ -61,23 +61,23 @@ Clone the project repo, then from its `DeploymentPackage\DevOps\` folder run:
 
 It installs, for the current user only (no administrator rights needed):
 
-- **MSAL.PS**, used by `Import-DocumentTemplates.ps1` and `Upload-StagedPortalChanges.ps1`
+- **Az.Accounts**, used by `Import-DocumentTemplates.ps1` and `Upload-StagedPortalChanges.ps1`
 - **Power Platform CLI (`pac`)**, as a dotnet tool, used for solution export/import/pack, data import/export and `-ResetEnvironment`
+
+Both are pinned to tested versions at the top of the script. It also creates your sandbox connection file (next step) if you don't have one yet.
 
 Open a new terminal (or restart Visual Studio) afterwards so `pac` is on your `PATH`, then check it with `pac --version`.
 
-> Don't run `Install_SDK_Tools.ps1`. It refreshes the vendored tools under `DevOps\Tools\` and is a template-maintenance task, not developer setup.
-
-## 7. Create your sandbox connection file
+## 7. Fill in your sandbox connection file
 
 Each developer works against their own Dataverse sandbox environment. The connection file lives **outside the repo** and is never committed. It holds no password: everything signs in through MSAL with a browser sign-in, and the token is cached after the first run.
 
-1. Create the folder `C:\CrmConnection`. `Import.ps1` and `Export.ps1` look for the file at this exact path.
-2. Copy `DeploymentPackage\DevOps\CdsConnectionParameters\MyCdsSandboxConnection-Template.ps1` to `C:\CrmConnection\MyCdsSandboxConnection.ps1`.
-3. Edit the copy:
+1. `Install_PowerShell_Dependencies.ps1` already created `C:\CrmConnection\MyCdsSandboxConnection.ps1` from `DeploymentPackage\DevOps\CdsConnectionParameters\MyCdsSandboxConnection-Template.ps1`. `Import.ps1` and `Export.ps1` look for the file at this exact path.
+2. Edit it:
    - Set `$orgName` to your sandbox's environment name, the part before `.crm*.dynamics.com`.
    - Check the domain suffix in `$environmentUrl` against **Settings > Session details** in the maker portal. Commercial North America is `crm.dynamics.com` and GCC is `crm9.dynamics.com`; GCC High and DoD use different domains.
    - Optionally set `TenantId` to pin the document-template sign-in to one tenant.
+   - Leave `AllowTestData = $true`, it lets `Import.ps1` load test data into your sandbox. Connection files for Prod never set it.
 
 ## 8. Verify your setup
 

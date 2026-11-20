@@ -66,8 +66,7 @@
     `pac pages upload` pushes to the live site with no gate — the
     confirmation prompt in this script is the only buffer.
 
-    Phase 2 requires the MSAL.PS PowerShell module. Install with:
-      Install-Module MSAL.PS -Scope CurrentUser
+    Phase 2 requires the Az.Accounts module (Install_PowerShell_Dependencies.ps1 installs it).
 #>
 [CmdletBinding()]
 param(
@@ -181,9 +180,6 @@ $environmentUrl = $pagesParams.EnvironmentUrl
 $pacCloud       = $config.Cloud
 $pacProfileName = $config.ProfileName
 $tenantId       = $config.TenantId
-
-# Microsoft's "Power Platform admin tools" public client ID
-$msftClientId = "51f81489-12ee-4a9e-aaae-a2591f45987d"
 
 Write-Host "pac target: $environmentUrl (cloud: $pacCloud, profile: $pacProfileName)" -ForegroundColor Cyan
 
@@ -644,24 +640,17 @@ else {
     Write-Host "================================================================" -ForegroundColor Cyan
 
     # -------------------------------------------------------------------------
-    # Auth (MSAL.PS — interactive on first run, cached after)
+    # Auth (Az.Accounts — interactive on first run, cached after)
     # -------------------------------------------------------------------------
     Write-Host ""
     Write-Host "Acquiring access token..." -ForegroundColor Cyan
-    Import-Module MSAL.PS -ErrorAction Stop
+    . "$devOpsRoot\Get-DataverseAccessToken.ps1"
+    $accessToken = Get-DataverseAccessToken -EnvironmentUrl $environmentUrl -TenantId $tenantId -Cloud $pacCloud
 
-    $token = Get-MsalToken `
-        -ClientId $msftClientId `
-        -TenantId $tenantId `
-        -Scopes @("$environmentUrl/.default") `
-        -RedirectUri "http://localhost"
-
-    if (-not $token -or -not $token.AccessToken) { throw "Failed to acquire access token." }
-
-    Write-Host "Token acquired (expires $($token.ExpiresOn))" -ForegroundColor Green
+    Write-Host "Token acquired" -ForegroundColor Green
 
     $readHeaders = @{
-        Authorization      = "Bearer $($token.AccessToken)"
+        Authorization      = "Bearer $accessToken"
         Accept             = "application/json"
         "OData-MaxVersion" = "4.0"
         "OData-Version"    = "4.0"

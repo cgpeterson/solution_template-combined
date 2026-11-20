@@ -20,9 +20,6 @@ DeploymentPackage/              # Dataverse solution deployment package
   DevOps/                       # Import/export scripts and tools
     Tools/
       Adoxio.Dynamics.DevOps/
-      ConfigurationMigration/
-      CoreTools/
-      PackageDeployment.PowerShell/
   CdsArtifacts.nuspec           # Package manifest for the solution artifact package
 azure-pipelines.yml             # CI/CD pipeline
 NuGet.config                    # globalPackagesFolder setting (required for tool discovery)

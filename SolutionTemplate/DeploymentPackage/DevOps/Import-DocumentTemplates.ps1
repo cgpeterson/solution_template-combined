@@ -4,8 +4,8 @@
 
 .DESCRIPTION
     Replaces the CCLLC.Cds.DevOps Import-DocumentTemplates cmdlet, which connected through
-    Get-CrmConnection (Microsoft.Xrm.Data.Powershell, ADAL). This script signs in with MSAL
-    (MSAL.PS) and uses the Dataverse Web API, with the same behavior:
+    Get-CrmConnection (Microsoft.Xrm.Data.Powershell, ADAL). This script signs in with Az.Accounts
+    and uses the Dataverse Web API, with the same behavior:
 
     - Each file is matched to an existing documenttemplate record by name (file name without
       extension). A match is updated in place; otherwise a new record is created.
@@ -17,7 +17,7 @@
     - Excel templates carry no such urn: new ones are created without associatedentitytypecode and
       existing ones keep theirs.
 
-    Requires the MSAL.PS module:  Install-Module MSAL.PS -Scope CurrentUser
+    Requires the Az.Accounts module (Install_PowerShell_Dependencies.ps1 installs it).
 
 .PARAMETER EnvironmentUrl
     The environment's URL, e.g. https://org.crm.dynamics.com
@@ -26,11 +26,7 @@
     Folder containing the .docx / .xlsx templates to import.
 
 .PARAMETER TenantId
-    Optional Entra tenant id or domain. Defaults to 'organizations' (any work or school account).
-
-.PARAMETER ClientId
-    Public client application id. Defaults to Microsoft's published sample client, the same one
-    Upload-StagedPortalChanges.ps1 and the pac-free tooling use.
+    Optional Entra tenant id. Defaults to the signed-in account's home tenant.
 #>
 [CmdletBinding()]
 param(
@@ -40,12 +36,12 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$TemplateDirectory,
 
-    [string]$TenantId = "organizations",
-
-    [string]$ClientId = "51f81489-12ee-4a9e-aaae-a2591f45987d"
+    [string]$TenantId
 )
 
 $ErrorActionPreference = "Stop"
+
+. "$PSScriptRoot\Get-DataverseAccessToken.ps1"
 
 Add-Type -AssemblyName System.IO.Compression
 
@@ -134,17 +130,11 @@ function Set-WordTemplateObjectTypeCode {
 function Invoke-ImportDocumentTemplates {
     $apiUrl = $EnvironmentUrl.TrimEnd('/') + "/api/data/v9.2"
 
-    Import-Module MSAL.PS -ErrorAction Stop
     Write-Host "Acquiring access token for $EnvironmentUrl..."
-    $token = Get-MsalToken `
-        -ClientId $ClientId `
-        -TenantId $TenantId `
-        -Scopes @("$($EnvironmentUrl.TrimEnd('/'))/.default") `
-        -RedirectUri "http://localhost"
-    if (-not $token -or -not $token.AccessToken) { throw "Failed to acquire an access token for $EnvironmentUrl." }
+    $accessToken = Get-DataverseAccessToken -EnvironmentUrl $EnvironmentUrl -TenantId $TenantId
 
     $headers = @{
-        Authorization      = "Bearer $($token.AccessToken)"
+        Authorization      = "Bearer $accessToken"
         Accept             = "application/json"
         "OData-MaxVersion" = "4.0"
         "OData-Version"    = "4.0"
